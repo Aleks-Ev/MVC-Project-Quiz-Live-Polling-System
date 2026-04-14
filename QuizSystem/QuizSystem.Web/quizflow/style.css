@@ -1,0 +1,144 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: linear-gradient(to bottom right, #e9d5ff, #f5f3ff, #d8b4fe);
+}
+
+/* layout */
+.screen {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
+
+/* hidden */
+.hidden {
+  display: none;
+}
+
+/* cards */
+.card {
+  background: white;
+  padding: 30px;
+  border-radius: 25px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+/* title */
+.title {
+  font-size: 48px;
+  font-weight: bold;
+  color: #5b21b6;
+}
+
+/* buttons */
+.btn {
+  padding: 12px 20px;
+  border-radius: 15px;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn:hover {
+  transform: scale(1.05);
+}
+
+.white {
+  background: white;
+  color: #6d28d9;
+}
+
+.purple {
+  background: #7c3aed;
+  color: white;
+}
+
+.full {
+  width: 100%;
+}
+
+/* inputs */
+.input {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+
+/* lobby */
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  background: #ede9fe;
+  padding: 8px;
+  margin: 5px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* quiz */
+.quiz {
+  text-align: center;
+}
+
+.timer {
+  width: 80%;
+  height: 8px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#timerBar {
+  height: 100%;
+  width: 100%;
+  background: #7c3aed;
+  transition: 1s linear;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 80%;
+}
+
+.opt {
+  height: 100px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.o1 { background: #c4b5fd; }
+.o2 { background: #a78bfa; color: white; }
+.o3 { background: #ddd6fe; }
+.o4 { background: #7c3aed; color: white; }
+
+/* leaderboard */
+.top3 {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.top3 div {
+  background: #f3f4f6;
+  padding: 10px;
+  border-radius: 15px;
+  text-align: center;
+}

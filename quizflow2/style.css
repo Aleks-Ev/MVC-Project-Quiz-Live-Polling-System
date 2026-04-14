@@ -1,0 +1,21 @@
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Custom scrollbar for player list */
+#players::-webkit-scrollbar {
+    width: 6px;
+}
+#players::-webkit-scrollbar-thumb {
+    background: #e48901;
+    border-radius: 10px;
+}
