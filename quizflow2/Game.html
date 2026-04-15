@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 min-h-screen flex items-center justify-center font-sans">
+
+<!-- QUIZ -->
+<div id="quiz" class="w-full max-w-2xl px-4 text-center space-y-8 fade-in">
+
+    <div class="w-full bg-white/50 rounded-full h-3 overflow-hidden shadow-inner">
+        <div id="timerBar" class="h-full bg-gradient-to-r from-purple-500 to-pink-500 w-full"></div>
+    </div>
+
+    <h2 id="question" class="text-3xl font-bold text-gray-800"></h2>
+
+    <div id="optionsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <div onclick="answer(0)" class="option-btn bg-white h-24 rounded-3xl flex items-center justify-center cursor-pointer shadow-md font-bold text-xl text-purple-800 border-b-4 border-purple-200"></div>
+
+        <div onclick="answer(1)" class="option-btn bg-white h-24 rounded-3xl flex items-center justify-center cursor-pointer shadow-md font-bold text-xl text-purple-800 border-b-4 border-purple-200"></div>
+
+        <div onclick="answer(2)" class="option-btn bg-white h-24 rounded-3xl flex items-center justify-center cursor-pointer shadow-md font-bold text-xl text-purple-800 border-b-4 border-purple-200"></div>
+
+        <div onclick="answer(3)" class="option-btn bg-white h-24 rounded-3xl flex items-center justify-center cursor-pointer shadow-md font-bold text-xl text-purple-800 border-b-4 border-purple-200"></div>
+
+    </div>
+</div>
+
+<!-- LEADERBOARD -->
+<div id="leaderboard" class="hidden w-full max-w-md text-center space-y-8 fade-in">
+
+    <h2 class="text-4xl font-black text-purple-800">🏆 Podium</h2>
+
+    <div id="top3" class="flex justify-center gap-4 items-end min-h-[150px]"></div>
+
+    <div id="leaderboardList" class="bg-white/50 p-4 rounded-3xl space-y-2"></div>
+
+    <button onclick="goHome()" class="bg-purple-600 text-white font-bold py-4 rounded-2xl w-full hover:bg-purple-700">
+        Play Again
+    </button>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
