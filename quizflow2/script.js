@@ -69,6 +69,7 @@ async function finishQuiz() {
         localStorage.setItem("lobbyPin", savedQuiz.id);
         localStorage.setItem("quiz", JSON.stringify(savedQuiz.questions));
         localStorage.setItem("players", JSON.stringify(["Host"]));
+        localStorage.setItem("isHost", "true");
 
         window.location.href = "Lobby.html";
     } catch (error) {
@@ -95,6 +96,9 @@ async function joinGame() {
             let players = JSON.parse(localStorage.getItem("players")) || [];
             if (!players.includes(nick)) players.push(nick);
             localStorage.setItem("players", JSON.stringify(players));
+            // Внутри joinGame, после localStorage.setItem("players", ...)
+            const updatedPlayers = JSON.parse(localStorage.getItem("players"));
+            await connection.invoke("SyncPlayers", pin, updatedPlayers);
 
             window.location.href = "Lobby.html";
         } else {
@@ -106,14 +110,80 @@ async function joinGame() {
 }
 
 // ---------------- LOBBY ----------------
+// Настройка соединения с сервером
+const connection = new signalR.HubConnectionBuilder()
+    .withUrl("http://localhost:5178/quizhub")
+    .configureLogging(signalR.LogLevel.Information)
+    .build();
+
+// Слушаем событие: когда кто-то зашел в наше лобби
+connection.on("PlayerJoined", (user) => {
+    let currentPlayers = JSON.parse(localStorage.getItem("players")) || [];
+    if (!currentPlayers.includes(user)) {
+        currentPlayers.push(user);
+        localStorage.setItem("players", JSON.stringify(currentPlayers));
+    }
+    loadLobby(); // Это перерисует список и скроет/покажет кнопку
+});
+
+// Слушаем событие: когда хост нажал "Start"
+connection.on("GameStarted", () => {
+    window.location.href = "Game.html";
+});
+// Добавь это там, где у тебя connection.on(...)
+connection.on("ScoreUpdated", (user, score) => {
+    scores[user] = score; // Обновляем общий объект scores данными от других игроков
+    console.log(`Счет игрока ${user} теперь ${score}`);
+});
+connection.on("UpdatePlayerList", (serverPlayers) => {
+    console.log("Синхронизация списка игроков:", serverPlayers);
+    localStorage.setItem("players", JSON.stringify(serverPlayers));
+    // Если мы в лобби, обновляем экран
+    if (window.location.href.includes("Lobby.html")) {
+        loadLobby();
+    }
+});
+
+// Запускаем соединение
+async function startSignalR() {
+    try {
+        await connection.start();
+        console.log("SignalR подключен!");
+        
+        // Если мы уже в лобби, нужно сообщить серверу, в какую "комнату" мы зашли
+        const pin = localStorage.getItem("lobbyPin");
+        const nick = localStorage.getItem("players") ? JSON.parse(localStorage.getItem("players"))[0] : "Guest";
+        
+        if (pin) {
+            await connection.invoke("JoinLobby", pin, nick);
+        }
+    } catch (err) {
+        console.error("Ошибка подключения:", err);
+    }
+}
 function loadLobby() {
     const pin = localStorage.getItem("lobbyPin");
     const playersList = JSON.parse(localStorage.getItem("players")) || [];
 
     const pinEl = document.getElementById("pin");
     const list = document.getElementById("players");
+    
+    // 1. Находим кнопку старта по её тексту или onclick
+    const startBtn = document.querySelector("button[onclick='startGame()']");
 
     if (pinEl) pinEl.innerText = pin || "----";
+
+    // 2. ЛОГИКА СКРЫТИЯ КНОПКИ
+    // Проверяем: если в локальной памяти НЕТ ника "Host", значит мы зашли как игрок
+    const isHost = playersList.includes("Host");
+
+    if (startBtn) {
+        // Если это не хост — полностью удаляем кнопку из DOM для надежности
+        if (!isHost) {
+            startBtn.remove(); 
+        }
+    }
+
     if (list) {
         list.innerHTML = "";
         playersList.forEach(p => {
@@ -125,8 +195,21 @@ function loadLobby() {
     }
 }
 
-function startGame() {
-    window.location.href = "Game.html";
+async function startGame() {
+    const pin = localStorage.getItem("lobbyPin");
+
+    try {
+        // 1. Отправляем сигнал на бэкенд в наш QuizHub
+        await connection.invoke("StartGame", pin); 
+        
+        // ПРИМЕЧАНИЕ: Самим делать window.location.href здесь НЕ ОБЯЗАТЕЛЬНО, 
+        // так как сервер пришлет команду "GameStarted" в том числе и нам.
+        // Но для скорости можно оставить:
+        window.location.href = "Game.html";
+    } catch (err) {
+        console.error("Ошибка при запуске игры:", err);
+        alert("Не удалось запустить игру");
+    }
 }
 
 // ---------------- GAME ----------------
@@ -207,35 +290,51 @@ function showQuestion() {
 }
 
 // ---------------- ANSWER ----------------
-function answer(index) {
+async function answer(index) {
     clearInterval(timerInterval);
 
     const q = questions[currentQuestion];
-    const player = players[0];
+    // Берем имя текущего игрока (обычно оно первое в списке для этого браузера)
+    const player = JSON.parse(localStorage.getItem("players"))[0] || "Guest";
+    const pin = localStorage.getItem("lobbyPin");
 
     const timeTaken = (Date.now() - startTime) / 1000;
-
     const grid = document.getElementById("optionsGrid");
+
+    let isCorrect = (index === q.correct);
 
     if (grid) {
         const options = grid.querySelectorAll(".option-btn");
 
-        if (index === q.correct) {
+        if (isCorrect) {
             options[index].classList.add("bg-green-100", "border-green-500");
-
+            
+            // Считаем бонус за скорость
             let points = Math.max(1000 - Math.floor(timeTaken * 100), 100);
-            scores[player] += points;
+            scores[player] = (scores[player] || 0) + points;
         } else {
             options[index].classList.add("bg-red-100", "border-red-500");
             options[q.correct].classList.add("bg-green-100");
+            // При ошибке очки не прибавляем (или можно вычитать, если хочешь жесткую игру)
         }
     } else {
-        if (index === q.correct) {
-            scores[player] += 500;
+        // Fallback для простого интерфейса
+        if (isCorrect) {
+            scores[player] = (scores[player] || 0) + 500;
             alert("Correct!");
         } else {
             alert("Wrong!");
         }
+    }
+
+    // --- ОТПРАВКА НА СЕРВЕР ---
+    // После того как обновили свой счет, сообщаем об этом всем остальным
+    try {
+        if (connection.state === signalR.HubConnectionState.Connected) {
+            await connection.invoke("UpdateScore", pin, player, scores[player]);
+        }
+    } catch (err) {
+        console.error("Не удалось отправить счет:", err);
     }
 
     setTimeout(autoNext, 1000);
@@ -279,4 +378,5 @@ function showLeaderboard() {
 window.onload = function () {
     loadLobby();
     loadGame();
+    startSignalR(); // Запускаем "живую" связь при загрузке любой страницы
 };
