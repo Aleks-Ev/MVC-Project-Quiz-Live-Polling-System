@@ -2,40 +2,60 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Create Quiz</title>
+    <title>QuizFlow | Create</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
 </head>
+<body class="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 min-h-screen flex items-center justify-center font-sans">
 
-<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+    <div class="bg-white p-8 rounded-3xl shadow-xl w-96 space-y-6 fade-in">
+        
+        <div id="stepName" class="space-y-4">
+            <h2 class="text-2xl font-black text-center text-gray-800">New Quiz</h2>
+            <input id="quizTitle" placeholder="Enter quiz name..." class="border p-4 w-full rounded-2xl text-center text-lg focus:ring-2 focus:ring-purple-400 outline-none">
+            <div class="flex gap-2">
+                <button onclick="goBack()" class="w-1/3 text-gray-400 font-bold">Back</button>
+                <button onclick="nextStep()" class="w-2/3 bg-purple-600 text-white py-3 rounded-2xl font-bold hover:bg-purple-700 transition">Next</button>
+            </div>
+        </div>
 
-<div class="bg-white p-8 rounded-2xl shadow w-96 space-y-4 fade-in">
+        <div id="stepQuestions" class="hidden space-y-4">
+            <h2 id="displayTitle" class="text-xl font-bold text-center text-purple-600"></h2>
+            
+            <input id="questionInput" placeholder="Enter question" class="border p-3 w-full rounded-xl outline-none focus:border-purple-400">
 
-    <h2 class="text-2xl font-bold text-center">Create Quiz</h2>
+            <div class="grid gap-2">
+                <input class="answer border p-3 w-full rounded-xl text-sm" placeholder="Answer 1">
+                <input class="answer border p-3 w-full rounded-xl text-sm" placeholder="Answer 2">
+                <input class="answer border p-3 w-full rounded-xl text-sm" placeholder="Answer 3">
+                <input class="answer border p-3 w-full rounded-xl text-sm" placeholder="Answer 4">
+            </div>
 
-    <input id="questionInput" placeholder="Enter question" class="border p-3 w-full rounded-xl">
+            <input id="correctIndex" type="number" min="0" max="3" placeholder="Correct index (0-3)" class="border p-3 w-full rounded-xl text-sm">
 
-    <input class="answer border p-3 w-full rounded-xl" placeholder="Answer 1">
-    <input class="answer border p-3 w-full rounded-xl" placeholder="Answer 2">
-    <input class="answer border p-3 w-full rounded-xl" placeholder="Answer 3">
-    <input class="answer border p-3 w-full rounded-xl" placeholder="Answer 4">
+            <button onclick="addQuestion()" class="bg-blue-500 text-white w-full py-2 rounded-xl font-bold hover:bg-blue-600 transition">
+                + Add Question
+            </button>
 
-    <input id="correctIndex" type="number" min="0" max="3" placeholder="Correct answer (0-3)" class="border p-3 w-full rounded-xl">
+            <div class="pt-4 space-y-2">
+                <button id="saveQuizBtn" onclick="saveQuizToAccount()" class="bg-green-600 text-white w-full py-3 rounded-xl font-bold hover:bg-green-700 shadow-lg shadow-green-100">
+                    Save Quiz
+                </button>
+                
+                <button onclick="finishQuiz()" class="bg-white border-2 border-purple-600 text-purple-600 w-full py-3 rounded-xl font-bold hover:bg-purple-50">
+                    Create Lobby (Quick)
+                </button>
+                
+                <button onclick="prevStep()" class="text-xs text-gray-400 w-full">← Back to Title</button>
+            </div>
+        </div>
+    </div>
 
-    <button onclick="addQuestion()" class="bg-blue-500 text-white w-full py-2 rounded-xl hover:bg-blue-600">
-        Add Question
-    </button>
-
-    <button onclick="finishQuiz()" class="bg-green-500 text-white w-full py-2 rounded-xl hover:bg-green-600">
-        Create Lobby
-    </button>
-
-    <button onclick="goBack()" class="text-sm text-gray-400 w-full">
-        ← Back
-    </button>
-
-</div>
-
-<script src="script.js"></script>
+    <script src="script.js"></script>
+    <script>
+        window.onload = function() {
+            checkQuickMode(); // Скроет кнопку Save, если зашли через Quick Game
+        };
+    </script>
 </body>
 </html>

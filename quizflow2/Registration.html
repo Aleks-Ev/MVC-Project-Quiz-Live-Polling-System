@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QuizFlow | Register</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 min-h-screen flex items-center justify-center font-sans">
+
+    <div class="bg-white p-8 rounded-3xl shadow-xl w-96 space-y-6 fade-in text-center">
+        <h2 class="text-3xl font-black text-purple-700">Create Account</h2>
+        
+        <div class="space-y-4 text-left">
+            <div>
+                <label class="text-xs font-bold text-gray-400 ml-2 uppercase">Nickname</label>
+                <input id="regName" type="text" placeholder="Your name" class="border p-3 w-full rounded-xl focus:ring-2 focus:ring-purple-400 outline-none">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-400 ml-2 uppercase">Email</label>
+                <input id="regEmail" type="email" placeholder="email@example.com" class="border p-3 w-full rounded-xl focus:ring-2 focus:ring-purple-400 outline-none">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-400 ml-2 uppercase">Password</label>
+                <input id="regPass" type="password" placeholder="••••••••" class="border p-3 w-full rounded-xl focus:ring-2 focus:ring-purple-400 outline-none">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-400 ml-2 uppercase">Confirm Password</label>
+                <input id="regPassConfirm" type="password" placeholder="••••••••" class="border p-3 w-full rounded-xl focus:ring-2 focus:ring-purple-400 outline-none">
+            </div>
+        </div>
+
+        <button onclick="register()" class="bg-green-500 text-white w-full py-3 rounded-xl font-bold hover:bg-green-600 transition shadow-lg shadow-green-100">
+            Save & Continue
+        </button>
+
+        <p class="text-sm text-gray-500">Already have an account? 
+            <a href="Authorization.html" class="text-purple-600 font-bold hover:underline">Sign In</a>
+        </p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

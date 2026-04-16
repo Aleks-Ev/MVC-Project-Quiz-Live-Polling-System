@@ -1,71 +1,94 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR; // Нужно для Hub
-using System.Threading.Tasks;  // Нужно для Task
+using Microsoft.AspNetCore.SignalR;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. Настройка сервисов ---
+// --- 1. НАСТРОЙКА СЕРВИСОВ ---
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-// РАЗРЕШАЕМ CORS: чтобы твой фронтенд мог достучаться до API
+builder.Services.AddSignalR();
+// --- 1. Настройка сервисов ---
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite("Data Source=quizflow.db")); // Файл базы создастся сам
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://127.0.0.1:5500", "http://localhost:5500") // Адрес твоего Live Server
+        policy.WithOrigins("http://127.0.0.1:5500", "http://localhost:5500") 
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials(); // ОБЯЗАТЕЛЬНО для SignalR
+              .AllowCredentials(); 
     });
 });
 
-// Добавляем поддержку SignalR
-builder.Services.AddSignalR();
-
 var app = builder.Build();
 
-// --- 2. Конвейер (Middleware) ---
+// --- 2. MIDDLEWARE ---
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(); // Это создаст страницу /swagger
+    app.UseSwaggerUI();
 }
 
-app.UseCors(); // Применяем настройки доступа
+app.UseCors();
 
-// Временное хранилище квизов (вместо базы данных пока что)
-var quizzes = new List<Quiz>();
 
-// --- 3. Эндпоинты (API) ---
+// --- 4. ЭНДПОИНТЫ (API) ---
 
-// Получить все квизы
-app.MapGet("/api/quizzes", () => quizzes);
+// Получить все квизы (теперь из базы данных)
+app.MapGet("/api/quizzes", async (AppDbContext db) => 
+    await db.Quizzes.Include(q => q.Questions).ToListAsync());
 
-// Создать новый квиз (сюда будем слать данные из CreateQuiz.html)
-app.MapPost("/api/quizzes", ([FromBody] Quiz newQuiz) =>
+// Создать квиз (сохраняем в SQLite)
+app.MapPost("/api/quizzes", async ([FromBody] Quiz newQuiz, AppDbContext db) =>
 {
-    newQuiz.Id = Guid.NewGuid().ToString().Substring(0, 4).ToUpper(); // Генерация PIN-кода
-    quizzes.Add(newQuiz);
+    // Генерируем PIN, если фронтенд его не прислал
+    if (string.IsNullOrEmpty(newQuiz.Id))
+    {
+        newQuiz.Id = Guid.NewGuid().ToString().Substring(0, 4).ToUpper();
+    }
+    
+    // Добавляем в базу
+    db.Quizzes.Add(newQuiz);
+    await db.SaveChangesAsync(); // Физически записываем в файл .db
+    
+    Console.WriteLine($"Quiz saved to DB! PIN: {newQuiz.Id}");
     return Results.Ok(newQuiz);
 });
 
-// Найти квиз по PIN-коду (для игроков)
-app.MapGet("/api/quizzes/{id}", (string id) =>
+// Найти квиз по PIN (игрок заходит в лобби)
+app.MapGet("/api/quizzes/{id}", async (string id, AppDbContext db) =>
 {
-    var quiz = quizzes.FirstOrDefault(q => q.Id == id);
-    return quiz is not null ? Results.Ok(quiz) : Results.NotFound();
+    // Используем Include, чтобы база сразу отдала и вопросы квиза
+    var quiz = await db.Quizzes
+        .Include(q => q.Questions) 
+        .FirstOrDefaultAsync(q => q.Id != null && q.Id.ToLower() == id.ToLower());
+
+    return quiz is not null 
+        ? Results.Ok(quiz) 
+        : Results.NotFound(new { message = "Lobby not found in Database" });
 });
 
-//создадим класс Хаба
+// Настройка SignalR маршрута
 app.MapHub<QuizHub>("/quizhub");
 
 app.Run();
 
-// --- 4. Модели данных (под структуру твоего JS) ---
+
+// --- 3. ХРАНИЛИЩЕ (Static — чтобы данные не пропадали) ---
+// Это твой "заменитель" базы данных на время разработки
+// Мы выносим его в статический класс для надежности
+static class DataStorage
+{
+    public static List<Quiz> Quizzes = new List<Quiz>();
+}
+// --- 5. МОДЕЛИ И ХАБ (Классы) ---
 public class Quiz
 {
     public string? Id { get; set; }
+    public string? Title { get; set; } // Добавили заголовок
     public List<Question> Questions { get; set; } = new();
 }
 
@@ -75,7 +98,8 @@ public class Question
     public List<string> Answers { get; set; } = new();
     public int Correct { get; set; }
 }
-public class QuizHub : Microsoft.AspNetCore.SignalR.Hub 
+
+public class QuizHub : Hub 
 {
     public async Task JoinLobby(string pin, string user)
     {
@@ -87,14 +111,31 @@ public class QuizHub : Microsoft.AspNetCore.SignalR.Hub
     {
         await Clients.Group(pin).SendAsync("GameStarted");
     }
+
     public async Task UpdateScore(string pin, string user, int score)
     {
-    // Рассылаем всем новое состояние счета
         await Clients.Group(pin).SendAsync("ScoreUpdated", user, score);
     }
-    //Он будет рассылать обновленный массив имен всем участникам
+
     public async Task SyncPlayers(string pin, List<string> players)
     {
         await Clients.Group(pin).SendAsync("UpdatePlayerList", players);
     }
-}   
+}
+// Создай контекст базы данных (AppDbContext)
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    
+    public DbSet<Quiz> Quizzes => Set<Quiz>();
+    public DbSet<Question> Questions => Set<Question>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Связываем вопросы с квизом (один квиз — много вопросов)
+        modelBuilder.Entity<Quiz>()
+            .HasMany(q => q.Questions)
+            .WithOne()
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
