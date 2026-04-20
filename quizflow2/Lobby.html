@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Lobby</title>
+    <title>QuizFlow | Lobby</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
     <link rel="stylesheet" href="style.css">
@@ -24,12 +24,22 @@
 
     <ul id="players" class="space-y-2"></ul>
 
-    <button onclick="startGame()" class="bg-green-500 text-white w-full py-4 rounded-2xl text-lg font-bold hover:bg-green-600">
+    <button onclick="startGame()" class="bg-green-500 text-white w-full py-4 rounded-2xl text-lg font-bold hover:bg-green-600 shadow-lg transition-transform active:scale-95">
         Start Battle!
     </button>
 
 </div>
 
-<script src="script.js"></script>
+<script src="js/game.js"></script>
+
+<script>
+    window.onload = function() {
+        // Запускаем SignalR и отрисовываем текущее состояние лобби
+        if (typeof startSignalR === "function") {
+            startSignalR();
+            loadLobby();
+        }
+    };
+</script>
 </body>
 </html>
