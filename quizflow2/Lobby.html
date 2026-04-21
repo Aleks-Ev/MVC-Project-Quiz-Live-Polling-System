@@ -3,43 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <title>QuizFlow | Lobby</title>
+    <link rel="icon" href="kotEmine.png" type="image/x-icon">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script src="js/game.js" defer></script>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body class="bg-gradient-to-br from-gray-200 to-gray-300 min-h-screen flex items-center justify-center">
+<body class="min-h-screen font-sans relative p-6 flex items-center justify-center">
 
-<div class="bg-white p-10 rounded-3xl shadow-2xl w-96 text-center space-y-6 fade-in">
+<div class="blob"></div>
+<div class="blob2"></div>
 
-    <div>
-        <h2 class="text-2xl font-bold text-gray-800">Game Lobby</h2>
-        <p class="text-gray-400 italic">Waiting for players...</p>
+<main class="w-full max-w-md z-10 relative fade-in">
+    <div class="glass p-10 rounded-[40px] shadow-2xl text-center space-y-8">
+
+        <div class="space-y-2">
+            <h2 class="text-3xl font-black text-neon tracking-tighter uppercase italic">Game Lobby</h2>
+            <div id="statusIndicator" class="flex items-center justify-center gap-2 text-xs text-neon opacity-60">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-neon"></span>
+                </span>
+                WAITING FOR PLAYERS
+            </div>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 p-6 rounded-3xl backdrop-blur-md">
+            <p class="text-[10px] text-neon opacity-50 uppercase font-bold tracking-[0.2em] mb-1">Join Code</p>
+            <div id="pin" class="text-5xl font-black text-neon tracking-widest">----</div>
+        </div>
+
+        <div class="space-y-4">
+            <div class="flex justify-between items-center px-2">
+                <span class="text-xs font-bold text-neon opacity-70 uppercase">Participants</span>
+                <span id="playerCount" class="text-xs bg-neon text-indigo px-2 py-0.5 rounded-full font-bold">0</span>
+            </div>
+            
+            <ul id="players" class="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                <li class="text-white/30 italic text-sm py-4">No one here yet...</li>
+            </ul>
+        </div>
+
+        <div id="hostControls" class="pt-4">
+            <button onclick="startGame()" 
+                class="btn-neon w-full py-4 rounded-2xl font-bold shadow-lg transform transition active:scale-95">
+                START QUIZ
+            </button>
+        </div>
+
+        <button onclick="location.href='dashboard.html'" class="text-xs text-neon opacity-50 hover:opacity-100 transition">
+            Leave Lobby
+        </button>
     </div>
+</main>
 
-    <div class="bg-purple-100 p-6 rounded-2xl">
-        <p class="text-xs text-gray-500 uppercase">Game PIN</p>
-        <div id="pin" class="text-4xl font-black text-purple-600">----</div>
-    </div>
+<footer class="absolute bottom-6 text-center w-full z-10 opacity-30 text-[10px] text-neon uppercase tracking-widest">
+    Real-time Connection Established
+</footer>
 
-    <ul id="players" class="space-y-2"></ul>
-
-    <button onclick="startGame()" class="bg-green-500 text-white w-full py-4 rounded-2xl text-lg font-bold hover:bg-green-600 shadow-lg transition-transform active:scale-95">
-        Start Battle!
-    </button>
-
-</div>
-
-<script src="js/game.js"></script>
-
-<script>
-    window.onload = function() {
-        // Запускаем SignalR и отрисовываем текущее состояние лобби
-        if (typeof startSignalR === "function") {
-            startSignalR();
-            loadLobby();
-        }
-    };
-</script>
 </body>
 </html>

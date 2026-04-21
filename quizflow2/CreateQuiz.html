@@ -3,72 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <title>QuizFlow | Create</title>
+    <link rel="icon" href="kotEmine.png" type=" image/x-icon">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 min-h-screen flex items-center justify-center font-sans">
 
-    <div class="bg-white p-8 rounded-3xl shadow-xl w-96 space-y-6 fade-in">
-        
-        <div id="stepName" class="space-y-4">
-            <h2 class="text-2xl font-black text-center text-gray-800">New Quiz</h2>
-            <input id="quizTitle" placeholder="Enter quiz name..." class="border p-4 w-full rounded-2xl text-center text-lg focus:ring-2 focus:ring-purple-400 outline-none">
-            <div class="flex gap-2">
-                <button onclick="goHome()" class="w-1/3 text-gray-400 font-bold">Back</button>
-                <button onclick="nextStep()" class="w-2/3 bg-purple-600 text-white py-3 rounded-2xl font-bold hover:bg-purple-700 transition">Next</button>
-            </div>
-        </div>
+<body class="min-h-screen flex items-center justify-center font-sans relative">
 
-        <div id="stepQuestions" class="hidden space-y-4">
-            <h2 id="displayTitle" class="text-xl font-bold text-center text-purple-600"></h2>
-            
-            <input id="questionInput" placeholder="Enter question" class="border p-3 w-full rounded-xl outline-none focus:border-purple-400">
+<!-- BLOBS -->
+<div class="blob"></div>
+<div class="blob2"></div>
 
-            <div class="grid gap-2">
-                <input class="answer border p-3 w-full rounded-xl text-sm" placeholder="Answer 1">
-                <input class="answer border p-3 w-full rounded-xl text-sm" placeholder="Answer 2">
-                <input class="answer border p-3 w-full rounded-xl text-sm" placeholder="Answer 3">
-                <input class="answer border p-3 w-full rounded-xl text-sm" placeholder="Answer 4">
-            </div>
+<!-- CARD -->
+<div class="glass p-8 rounded-3xl shadow-2xl w-96 space-y-6 fade-in z-10">
 
-            <input id="correctIndex" type="number" min="0" max="3" placeholder="Correct index (0-3)" class="border p-3 w-full rounded-xl text-sm">
+    <!-- STEP 1 -->
+    <div id="stepName" class="space-y-4">
 
-            <button onclick="addQuestion()" class="bg-blue-500 text-white w-full py-2 rounded-xl font-bold hover:bg-blue-600 transition">
-                + Add Question
+        <h2 class="text-2xl font-black text-center text-neon">
+            New Quiz
+        </h2>
+
+        <input id="quizTitle"
+            placeholder="Enter quiz name..."
+            class="input text-lg">
+
+        <div class="flex gap-2">
+            <button onclick="goHome()"
+                class="w-1/3 text-neon opacity-60 font-bold hover:opacity-100 transition">
+                Back
             </button>
 
-            <div class="pt-4 space-y-2">
-                <button id="saveQuizBtn" onclick="saveQuizToAccount()" class="bg-green-600 text-white w-full py-3 rounded-xl font-bold hover:bg-green-700 shadow-lg shadow-green-100">
-                    Save Quiz
-                </button>
-                
-                <button onclick="finishQuiz()" class="bg-white border-2 border-purple-600 text-purple-600 w-full py-3 rounded-xl font-bold hover:bg-purple-50">
-                    Create Lobby (Quick)
-                </button>
-                
-                <button onclick="prevStep()" class="text-xs text-gray-400 w-full">← Back to Title</button>
-            </div>
+            <button onclick="nextStep()"
+                class="w-2/3 btn-neon py-3 rounded-2xl font-bold">
+                Next
+            </button>
         </div>
     </div>
 
-    <script src="js/auth.js"></script>         <script src="js/quiz-creator.js"></script>  <script src="js/game.js"></script>          <script>
-        window.onload = function() {
-            // Инициализируем SignalR на случай, если выберут Quick Game
-            if (typeof startSignalR === "function") startSignalR();
-            
-            // Проверка режима (скрыть/показать кнопку сохранения)
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('quick') === 'true') {
-                document.getElementById("saveQuizBtn")?.classList.add("hidden");
-            }
-        };
+    <!-- STEP 2 -->
+    <div id="stepQuestions" class="hidden space-y-4">
 
-        // Вспомогательные функции навигации, если их нет в модулях
-        function prevStep() {
-            document.getElementById("stepName").classList.remove("hidden");
-            document.getElementById("stepQuestions").classList.add("hidden");
-        }
-    </script>
+        <h2 id="displayTitle"
+            class="text-xl font-bold text-center text-neon">
+        </h2>
+        
+        <input id="questionInput"
+            placeholder="Enter question"
+            class="input">
+
+        <div class="grid gap-2">
+            <input class="answer input text-sm" placeholder="Answer 1">
+            <input class="answer input text-sm" placeholder="Answer 2">
+            <input class="answer input text-sm" placeholder="Answer 3">
+            <input class="answer input text-sm" placeholder="Answer 4">
+        </div>
+
+        <input id="correctIndex"
+            type="number"
+            min="0"
+            max="3"
+            placeholder="Correct index (0-3)"
+            class="input text-sm">
+
+        <button onclick="addQuestion()"
+            class="btn-outline w-full py-2 rounded-xl font-bold">
+            + Add Question
+        </button>
+
+        <div class="pt-4 space-y-2">
+
+            <button id="saveQuizBtn"
+                onclick="saveQuizToAccount()"
+                class="btn-neon w-full py-3 rounded-xl font-bold shadow-md">
+                Save Quiz
+            </button>
+            
+            <button onclick="finishQuiz()"
+                class="btn-outline w-full py-3 rounded-xl font-bold">
+                Create Lobby (Quick)
+            </button>
+            
+            <button onclick="prevStep()"
+                class="text-xs text-neon opacity-60 w-full hover:opacity-100 transition">
+                ← Back to Title
+            </button>
+
+        </div>
+    </div>
+
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/quiz-creator.js"></script>
+<script src="js/game.js"></script>
+
+<script>
+window.onload = function() {
+    if (typeof startSignalR === "function") startSignalR();
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('quick') === 'true') {
+        document.getElementById("saveQuizBtn")?.classList.add("hidden");
+    }
+};
+
+function prevStep() {
+    document.getElementById("stepName").classList.remove("hidden");
+    document.getElementById("stepQuestions").classList.add("hidden");
+}
+</script>
+
 </body>
 </html>

@@ -1,10 +1,21 @@
-// ---------------- QUIZ CREATOR ----------------
+// ---------------- QUIZ CREATOR (DATABASE READY) ----------------
 
 let createdQuestions = [];
+//const API_URL = "http://localhost:5178/api";
+
+// Проверка авторизации при входе на страницу
+// Замени window.onload на это:
+window.addEventListener('load', () => {
+    const token = localStorage.getItem("userToken");
+    if (!token) {
+        alert("Please sign in to create quizzes!");
+        window.location.href = "Authorization.html";
+    }
+});
 
 function nextStep() {
     const title = document.getElementById("quizTitle").value.trim();
-    if (!title) return alert("Enter name!");
+    if (!title) return alert("Please enter a quiz name!");
 
     document.getElementById("stepName").classList.add("hidden");
     document.getElementById("stepQuestions").classList.remove("hidden");
@@ -12,68 +23,95 @@ function nextStep() {
 }
 
 function addQuestion() {
-    const question = document.getElementById("questionInput").value.trim();
+    const questionText = document.getElementById("questionInput").value.trim();
     const answers = Array.from(document.querySelectorAll(".answer")).map(a => a.value.trim());
-    const correct = parseInt(document.getElementById("correctIndex").value);
+    const correctIndex = parseInt(document.getElementById("correctIndex").value);
 
-    if (question && answers.every(a => a) && !isNaN(correct)) {
-        createdQuestions.push({ q: question, answers: answers, correct: correct });
-
-        alert("Question added!");
-
-        document.getElementById("questionInput").value = "";
-        document.querySelectorAll(".answer").forEach(a => a.value = "");
-        document.getElementById("correctIndex").value = "";
-    } else { 
-        alert("Fill all fields!"); 
+    // Валидация полей
+    if (!questionText || answers.some(a => !a) || isNaN(correctIndex)) {
+        return alert("Please fill all fields and select the correct answer!");
     }
+
+    // Добавляем в массив (структура совпадает с требованиями БД)
+    createdQuestions.push({
+        text: questionText,
+        options: answers,
+        correctAnswerIndex: correctIndex
+    });
+
+    alert(`Question ${createdQuestions.length} added!`);
+
+    // Очистка полей
+    document.getElementById("questionInput").value = "";
+    document.querySelectorAll(".answer").forEach(a => a.value = "");
+    document.getElementById("correctIndex").value = "";
 }
 
 async function saveQuizToAccount() {
-    if (createdQuestions.length === 0) return alert("Add questions first!");
+    if (createdQuestions.length === 0) return alert("Add at least one question!");
 
-    const title = document.getElementById("quizTitle").value;
+    const title = document.getElementById("quizTitle").value.trim();
+    const userId = localStorage.getItem("userId");
+    const token = localStorage.getItem("userToken");
 
-    // Формируем объект для сервера
-    const quizData = { 
-        id: "Q-" + Math.random().toString(36).substr(2,4).toUpperCase(), 
-        title: title, 
-        questions: createdQuestions 
+    if (!userId || !token) {
+        alert("Session expired. Please log in again.");
+        window.location.href = "Authorization.html";
+        return;
+    }
+
+    // Формируем объект для API
+    const quizData = {
+        title: title,
+        authorId: userId, // Привязываем квиз к пользователю
+        questions: createdQuestions
     };
 
     try {
-        // ОТПРАВЛЯЕМ НА СЕРВЕР
-        const response = await fetch("http://localhost:5178/api/quizzes", {
+        console.log("🚀 Sending quiz to server...", quizData);
+        
+        const response = await fetch(`${API_URL}/quizzes`, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
-                // Если ты уже настроил авторизацию, сюда нужно будет добавить токен:
-                // "Authorization": "Bearer " + localStorage.getItem("userToken")
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}` // Передаем токен безопасности
             },
             body: JSON.stringify(quizData)
         });
 
         if (response.ok) {
-            alert("Quiz successfully saved to server!");
-            // Очищаем локальные данные, так как они теперь на сервере
+            const result = await response.json();
+            alert("Quiz successfully saved to your account!");
+            
+            // Очищаем локальное состояние
+            createdQuestions = [];
             localStorage.removeItem("selectedQuizId");
+            
+            // Возвращаемся в дашборд
             window.location.href = "dashboard.html";
         } else {
             const errText = await response.text();
-            alert("Server error: " + errText);
+            alert("Failed to save: " + errText);
         }
     } catch (err) {
-        console.error("Failed to save quiz:", err);
-        alert("Could not connect to server. Is your Backend running?");
+        console.error("Save error:", err);
+        alert("Server connection error. Is the backend running?");
     }
 }
+
+// ---------------- UI HELPERS ----------------
 
 function showJoin() {
     const home = document.getElementById("home");
     const join = document.getElementById("join");
-
     if (home && join) {
         home.classList.add("hidden");
         join.classList.remove("hidden");
+    }
+}
+
+function cancelCreation() {
+    if (confirm("Are you sure? All unsaved questions will be lost.")) {
+        window.location.href = "dashboard.html";
     }
 }

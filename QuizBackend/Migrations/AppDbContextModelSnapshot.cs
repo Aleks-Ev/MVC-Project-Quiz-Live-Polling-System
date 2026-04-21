@@ -21,25 +21,25 @@ namespace QuizBackend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Answers")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Correct")
+                    b.Property<int>("CorrectAnswerIndex")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Q")
+                    b.Property<string>("Options")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("QuizId")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("QuizId");
 
-                    b.ToTable("Questions");
+                    b.ToTable("Question");
                 });
 
             modelBuilder.Entity("Quiz", b =>
@@ -48,11 +48,35 @@ namespace QuizBackend.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Title")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
                     b.ToTable("Quizzes");
+                });
+
+            modelBuilder.Entity("User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Nickname")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Question", b =>

@@ -1,45 +1,195 @@
+/* =========================
+   VARIABLES
+========================= */
+
+:root {
+    --indigo: #3F37C9;
+    --violet-deep: #2a2496;
+    --violet: #4c3dd9;
+    --neon: #C7F000;
+}
+
+/* =========================
+   BACKGROUND
+========================= */
+
+body {
+    background: linear-gradient(270deg, #2a2496, #4c3dd9, #3F37C9);
+    background-size: 400% 400%;
+    animation: gradientMove 14s ease infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at center,
+            rgba(255,255,255,0.08) 0%,
+            rgba(0,0,0,0.25) 70%);
+    pointer-events: none;
+}
+
+body::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 20% 30%, rgba(199,240,0,0.12), transparent 60%),
+        radial-gradient(circle at 80% 70%, rgba(199,240,0,0.10), transparent 60%),
+        radial-gradient(circle at 50% 80%, rgba(199,240,0,0.08), transparent 60%);
+    pointer-events: none;
+}
+
+/* =========================
+   BLOBS
+========================= */
+
+.blob, .blob2 {
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    background: var(--neon);
+    filter: blur(130px);
+    opacity: 0.12;
+    border-radius: 50%;
+    animation: float 14s infinite alternate ease-in-out;
+    z-index: 0;
+}
+
+.blob { top: 10%; left: 10%; }
+.blob2 { bottom: 10%; right: 10%; animation-delay: 4s; }
+
+/* =========================
+   BUTTONS
+========================= */
+
+.btn-neon {
+    background: var(--neon);
+    color: var(--indigo);
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid var(--neon);
+    color: var(--neon);
+}
+
+/* =========================
+   TEXT
+========================= */
+
+.text-neon {
+    color: var(--neon);
+}
+
+/* =========================
+   INPUT
+========================= */
+
+.input {
+    border: 2px solid var(--neon);
+    padding: 12px;
+    width: 100%;
+    border-radius: 12px;
+    text-align: center;
+    outline: none;
+    background: #a29bfe; /* Ваш текущий цвет фона инпута */
+    color: #ffffff;      /* Белый текст при вводе */
+}
+
+.input::placeholder {
+    color: rgba(255, 255, 255, 0.7); /* Полупрозрачный белый для подсказки */
+}
+
+.input:focus {
+    box-shadow: 0 0 8px rgba(199, 240, 0, 0.4);
+}
+
+/* =========================
+   GLASS CARD
+========================= */
+
+.glass {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(199,240,0,0.2);
+}
+
+/* =========================
+   ANIMATIONS
+========================= */
+
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes float {
+    from { transform: translateY(0px); }
+    to { transform: translateY(60px); }
+}
+
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(25px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 .fade-in {
-    animation: fadeInUp 0.5s ease-out forwards;
+    animation: fadeInUp 0.6s ease-out;
 }
+
+/* =========================
+   UTIL
+========================= */
 
 .hidden {
     display: none !important;
 }
 
-/* Custom scrollbar for player list */
-#players::-webkit-scrollbar {
-    width: 6px;
-}
-#players::-webkit-scrollbar-thumb {
-    background: #e48901;
-    border-radius: 10px;
+button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
-/* NEW thing */
-.option-btn {
-    transition: all 0.2s ease;
+/* Обычное состояние (вместо белого) */
+.quiz-item-card {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(199, 240, 0, 0.2);
 }
 
-.option-btn:hover {
-    transform: translateY(-3px);
+/* Выбранное состояние (вместо фиолетового) */
+.quiz-item-card.selected-quiz {
+    background-color: var(--neon) !important;
+    color: var(--indigo) !important;
+    border: 1px solid var(--neon);
 }
 
-.fade-in {
-    animation: fadeInUp 0.5s ease-out;
+/* Делаем шрифт игрока и статуса четким и белым */
+#players li {
+    background: rgba(255, 255, 255, 0.1) !important; /* Полупрозрачный фон строки */
+    color: #ffffff !important;                        /* Чистый белый текст */
+    opacity: 1 !important;                            /* Убираем прозрачность текста */
+    padding: 10px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
 }
 
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(15px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* Если внутри есть статус READY или ник, можно выделить их отдельно */
+#players li span {
+    color: #ffffff !important;
+    opacity: 1 !important;
+}
+
+/* Выделяем статус (если он последний в строке) неоновым цветом */
+#players li span:last-child {
+    color: var(--neon) !important;
+    font-weight: 800;
 }

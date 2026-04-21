@@ -3,71 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <title>QuizFlow | Home</title>
+    <link rel="icon" href="kotEmine.png" type="image/x-icon">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    
+    <script src="js/auth.js" defer></script>
+    <script src="js/game.js" defer></script>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body class="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 min-h-screen flex items-center justify-center font-sans relative">
+<body class="min-h-screen flex items-center justify-center font-sans relative overflow-hidden">
 
-    <div class="absolute top-6 right-8">
-        <button onclick="location.href='Authorization.html'" 
-            class="text-purple-700 font-bold hover:text-purple-900 transition flex items-center gap-2">
-            <span>Sign In</span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3 3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-            </svg>
-        </button>
+<div class="blob"></div>
+<div class="blob2"></div>
+
+<div class="absolute top-6 right-8 z-20">
+    <button id="authBtn" onclick="goHome()" 
+        class="glass px-6 py-2 rounded-full text-neon font-bold border border-white/10 hover:bg-white/10 transition-all">
+        Sign In
+    </button>
+</div>
+
+<div id="home" class="text-center space-y-10 fade-in z-10">
+    <div class="space-y-2">
+        <h1 class="text-7xl font-black text-neon tracking-tighter italic uppercase">QuizFlow</h1>
+        <p class="text-neon opacity-50 tracking-[0.3em] font-light">NEXT-GEN TRIVIA ENGINE</p>
     </div>
 
-    <div id="home" class="text-center space-y-8 fade-in">
-        <h1 class="text-6xl font-black text-purple-700 drop-shadow-sm">QuizFlow</h1>
+    <div class="flex flex-col gap-4 items-center">
+        <button onclick="showJoin()" 
+            class="btn-neon w-72 py-5 rounded-3xl font-black text-xl shadow-[0_0_30px_rgba(199,240,0,0.3)] transform transition active:scale-95">
+            JOIN GAME
+        </button>
 
-        <div class="flex flex-col gap-4 items-center">
-            <button onclick="showJoin()" 
-                class="w-64 bg-white text-purple-700 font-bold px-6 py-4 rounded-2xl shadow-lg hover:-translate-y-1 transition-all active:scale-95">
-                Join Game
-            </button>
+        <button onclick="location.href='Registration.html'" 
+            class="w-72 bg-white/5 hover:bg-white/10 text-white border border-white/10 py-4 rounded-3xl font-bold transition-all">
+            Create Account
+        </button>
+    </div>
+</div>
 
-            <button onclick="location.href='CreateQuiz.html?quick=true'" 
-                class="w-64 bg-purple-600 text-white font-bold px-6 py-4 rounded-2xl shadow-lg hover:bg-purple-700 hover:-translate-y-1 transition-all active:scale-95">
-                Create Quick Game
-            </button>
+<div id="join" class="hidden glass p-10 rounded-[40px] shadow-2xl text-center space-y-6 fade-in w-96 z-10 relative">
+    <div class="space-y-1">
+        <h2 class="text-3xl font-black text-neon uppercase italic">Enter Lobby</h2>
+        <p class="text-neon text-xs opacity-60">Enter the code provided by the host</p>
+    </div>
+
+    <div class="space-y-4">
+        <div class="text-left">
+            <label class="text-[10px] text-neon opacity-50 ml-4 font-bold uppercase">Your Nickname</label>
+            <input id="nickname" type="text" placeholder="Gamer123" class="input w-full mt-1">
+        </div>
+        <div class="text-left">
+            <label class="text-[10px] text-neon opacity-50 ml-4 font-bold uppercase">Lobby Code</label>
+            <input id="pinInput" type="text" placeholder="0000" class="input w-full mt-1 text-center text-2xl tracking-[0.5em] font-black uppercase">
         </div>
     </div>
 
-    <div id="join" class="hidden bg-white p-8 rounded-3xl shadow-2xl text-center space-y-5 fade-in w-80 border border-purple-100">
-        <h2 class="text-2xl font-black text-purple-700">Ready?</h2>
-        <p class="text-gray-400 text-sm">Enter details to join the fun</p>
+    <button onclick="joinGame()" class="btn-neon w-full py-4 rounded-2xl font-black shadow-lg">
+        START PLAYING
+    </button>
 
-            <div class="space-y-3">
-                <input id="nickname" placeholder="Nickname" 
-                    class="border-2 border-purple-50 p-3 w-full rounded-xl text-center outline-none focus:border-purple-300 transition">
-                <input id="pinInput" placeholder="Lobby Code" 
-                    class="border-2 border-purple-50 p-3 w-full rounded-xl text-center font-mono text-lg outline-none focus:border-purple-300 transition">
-            </div>
+    <button onclick="location.reload()" class="text-xs text-neon opacity-50 hover:opacity-100 transition tracking-widest font-bold">
+        ← CANCEL
+    </button>
+</div>
 
-            <button onclick="joinGame()" 
-                class="bg-purple-600 text-white w-full py-3 rounded-xl font-bold shadow-md hover:bg-purple-700 transition">
-                Enter Lobby
-            </button>
+<script>
+    // Скрипт для обновления кнопки входа
+    window.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem("userToken");
+        const userName = localStorage.getItem("userName");
+        const authBtn = document.getElementById("authBtn");
+        
+        if (token && userName) {
+            authBtn.innerText = `Hi, ${userName}`;
+        }
+    });
 
-        <button onclick="location.reload()" class="text-sm text-gray-400 hover:text-purple-600 transition">
-            ← Back
-        </button>
-    </div>
+    function showJoin() {
+        document.getElementById("home").classList.add("hidden");
+        document.getElementById("join").classList.remove("hidden");
+    }
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    // Эта функция связывает ввод с логикой SignalR в game.js
+    async function joinGame() {
+        const nick = document.getElementById("nickname").value.trim();
+        const pin = document.getElementById("pinInput").value.trim();
 
-    <script src="js/game.js"></script>         <script src="js/quiz-creator.js"></script>  <script>
-        window.onload = function() {
-            // Проверяем, загрузилась ли функция, прежде чем её вызывать
-            if (typeof startSignalR === "function") {
-                startSignalR();
-            } else {
-                console.error("Ошибка: game.js не загрузился или путь js/game.js неверный!");
-            }
-        };
-    </script>
+        if (!nick || !pin) return alert("Please fill all fields!");
+
+        // Сохраняем данные для лобби
+        localStorage.setItem("userName", nick);
+        localStorage.setItem("lobbyPin", pin);
+        localStorage.setItem("isHost", "false"); // Игрок заходит как гость
+
+        // Переходим в лобби
+        window.location.href = "Lobby.html";
+    }
+</script>
+
 </body>
 </html>

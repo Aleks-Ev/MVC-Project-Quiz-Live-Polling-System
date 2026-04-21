@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QuizFlow | Results</title>
+    <link rel="icon" href="kotEmine.png" type="image/x-icon">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen font-sans relative p-6 flex items-center justify-center">
+
+<div class="blob"></div>
+<div class="blob2"></div>
+
+<main class="w-full max-w-4xl z-10 relative">
+    <div class="glass p-10 rounded-[40px] shadow-2xl text-center space-y-8 fade-in">
+        
+        <h1 class="text-5xl font-black text-neon tracking-tighter uppercase italic">Quiz Results</h1>
+
+        <div id="podiumSection" class="flex justify-center items-end gap-2 min-h-[300px] pt-10">
+            <div class="flex flex-col items-center">
+                <div id="name2" class="text-neon font-bold mb-2">---</div>
+                <div class="w-24 bg-white/20 rounded-t-2xl flex items-end justify-center pb-4 shadow-lg" style="height: 120px;">
+                    <span class="text-3xl font-black opacity-50">2</span>
+                </div>
+            </div>
+            <div class="flex flex-col items-center">
+                <div class="text-4xl mb-2">👑</div>
+                <div id="name1" class="text-neon text-2xl font-black mb-2">---</div>
+                <div class="w-32 bg-neon rounded-t-2xl flex items-end justify-center pb-6 shadow-[0_0_30px_rgba(199,240,0,0.4)]" style="height: 180px;">
+                    <span class="text-5xl font-black text-indigo">1</span>
+                </div>
+            </div>
+            <div class="flex flex-col items-center">
+                <div id="name3" class="text-neon font-bold mb-2">---</div>
+                <div class="w-24 bg-white/10 rounded-t-2xl flex items-end justify-center pb-4 shadow-lg" style="height: 80px;">
+                    <span class="text-3xl font-black opacity-30">3</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="statsSection" class="hidden space-y-4">
+            <h3 class="text-2xl font-bold text-neon">Detailed Statistics</h3>
+            <div id="statsList" class="grid gap-3 text-left max-h-60 overflow-y-auto pr-2">
+                </div>
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-4 pt-6 border-t border-white/10">
+            <button onclick="downloadResults()" class="bg-white/10 hover:bg-white/20 text-neon px-6 py-3 rounded-2xl font-bold transition-all border border-white/10">
+                📥 Download Results
+            </button>
+            
+            <button id="hostStatsBtn" onclick="toggleStats()" class="hidden bg-indigo/50 hover:bg-indigo text-white px-6 py-3 rounded-2xl font-bold transition-all">
+                📊 Show Statistics
+            </button>
+
+            <button onclick="location.href='dashboard.html'" class="btn-neon px-10 py-3 rounded-2xl font-bold shadow-lg">
+                Home
+            </button>
+        </div>
+    </div>
+</main>
+
+<script>
+    // Имитация данных (в реальности придут через SignalR или localStorage от хоста)
+    let finalScores = JSON.parse(localStorage.getItem("finalScores") || "[]");
+    const isHost = localStorage.getItem("isHost") === "true";
+
+    window.onload = () => {
+        if (isHost) document.getElementById('hostStatsBtn').classList.remove('hidden');
+        renderPodium();
+    };
+
+    function renderPodium() {
+        // Сортируем по очкам (по убыванию)
+        const sorted = finalScores.sort((a, b) => b.score - a.score);
+
+        if (sorted[0]) document.getElementById('name1').innerText = sorted[0].nickname;
+        if (sorted[1]) document.getElementById('name2').innerText = sorted[1].nickname;
+        if (sorted[2]) document.getElementById('name3').innerText = sorted[2].nickname;
+
+        // Заполняем статистику
+        const statsList = document.getElementById('statsList');
+        statsList.innerHTML = sorted.map((p, i) => `
+            <div class="flex justify-between glass p-3 rounded-xl border border-white/5">
+                <span><b class="text-neon">#${i+1}</b> ${p.nickname}</span>
+                <span class="font-mono">${p.score} pts</span>
+            </div>
+        `).join('');
+    }
+
+    function toggleStats() {
+        const p = document.getElementById('podiumSection');
+        const s = document.getElementById('statsSection');
+        const btn = document.getElementById('hostStatsBtn');
+        
+        if (s.classList.contains('hidden')) {
+            s.classList.remove('hidden');
+            p.classList.add('hidden');
+            btn.innerText = "🏆 Show Podium";
+        } else {
+            s.classList.add('hidden');
+            p.classList.remove('hidden');
+            btn.innerText = "📊 Show Statistics";
+        }
+    }
+
+    function downloadResults() {
+        const sorted = finalScores.sort((a, b) => b.score - a.score);
+        let content = "Place,Nickname,Score\n";
+        sorted.forEach((p, i) => {
+            content += `${i+1},${p.nickname},${p.score}\n`;
+        });
+
+        const blob = new Blob([content], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `quiz_results_${new Date().getTime()}.csv`;
+        a.click();
+    }
+</script>
+</body>
+</html>

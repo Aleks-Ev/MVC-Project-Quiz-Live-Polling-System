@@ -2,53 +2,64 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>QuizFlow | Game</title>
+    <title>QuizFlow | Live Game</title>
+    <link rel="icon" href="kotEmine.png" type="image/x-icon">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script src="js/game.js" defer></script>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body class="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 min-h-screen flex items-center justify-center font-sans">
+<body class="min-h-screen font-sans relative p-6 flex items-center justify-center overflow-hidden">
 
-<div id="quiz" class="w-full max-w-2xl px-4 text-center space-y-8 fade-in">
+<div class="blob"></div>
+<div class="blob2"></div>
 
-    <div class="w-full bg-white/50 rounded-full h-3 overflow-hidden shadow-inner">
-        <div id="timerBar" class="h-full bg-gradient-to-r from-purple-500 to-pink-500 w-full transition-all duration-100"></div>
+<main id="gameContainer" class="w-full max-w-3xl z-10 relative">
+
+    <div id="quiz" class="glass p-10 rounded-[40px] shadow-2xl space-y-10 fade-in text-center">
+        
+        <div class="relative w-full h-4 bg-white/10 rounded-full overflow-hidden shadow-inner">
+            <div id="timerBar" 
+                 class="absolute top-0 left-0 h-full bg-neon transition-all duration-100 ease-linear shadow-[0_0_15px_#C7F000]"
+                 style="width: 100%;">
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <p id="questionNumber" class="text-neon text-xs font-black uppercase tracking-[0.3em] opacity-60">Question Loading...</p>
+            <h2 id="question" class="text-3xl md:text-4xl font-black text-white leading-tight">
+                Get ready! The question will appear here...
+            </h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button onclick="submitAnswer(0)" class="option-btn glass p-6 rounded-3xl font-bold text-xl text-white hover:scale-[1.02] active:scale-95 transition-all border border-white/5 hover:border-neon">
+                ...
+            </button>
+            <button onclick="submitAnswer(1)" class="option-btn glass p-6 rounded-3xl font-bold text-xl text-white hover:scale-[1.02] active:scale-95 transition-all border border-white/5 hover:border-neon">
+                ...
+            </button>
+            <button onclick="submitAnswer(2)" class="option-btn glass p-6 rounded-3xl font-bold text-xl text-white hover:scale-[1.02] active:scale-95 transition-all border border-white/5 hover:border-neon">
+                ...
+            </button>
+            <button onclick="submitAnswer(3)" class="option-btn glass p-6 rounded-3xl font-bold text-xl text-white hover:scale-[1.02] active:scale-95 transition-all border border-white/5 hover:border-neon">
+                ...
+            </button>
+        </div>
+
+        <div id="waitingMsg" class="hidden animate-pulse italic text-neon opacity-70 pt-4">
+            Answer sent! Waiting for other players...
+        </div>
     </div>
 
-    <h2 id="question" class="text-3xl font-bold text-gray-800"></h2>
+</main>
 
-    <div id="optionsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div onclick="submitAnswer(0)" class="option-btn bg-white h-24 rounded-3xl flex items-center justify-center cursor-pointer shadow-md font-bold text-xl text-purple-800 border-b-4 border-purple-200 hover:bg-purple-50 transition"></div>
-        <div onclick="submitAnswer(1)" class="option-btn bg-white h-24 rounded-3xl flex items-center justify-center cursor-pointer shadow-md font-bold text-xl text-purple-800 border-b-4 border-purple-200 hover:bg-purple-50 transition"></div>
-        <div onclick="submitAnswer(2)" class="option-btn bg-white h-24 rounded-3xl flex items-center justify-center cursor-pointer shadow-md font-bold text-xl text-purple-800 border-b-4 border-purple-200 hover:bg-purple-50 transition"></div>
-        <div onclick="submitAnswer(3)" class="option-btn bg-white h-24 rounded-3xl flex items-center justify-center cursor-pointer shadow-md font-bold text-xl text-purple-800 border-b-4 border-purple-200 hover:bg-purple-50 transition"></div>
-    </div>
-</div>
+<footer class="absolute bottom-6 left-0 w-full text-center z-10 opacity-30 text-[10px] text-neon uppercase tracking-widest">
+    Sync Session: <span id="sessionStatus">Connected</span>
+</footer>
 
-<div id="leaderboard" class="hidden w-full max-w-md text-center space-y-8 fade-in">
-
-    <h2 class="text-4xl font-black text-purple-800">🏆 Podium</h2>
-
-    <div id="top3" class="flex justify-center gap-4 items-end min-h-[150px]"></div>
-
-    <div id="leaderboardList" class="bg-white/50 p-4 rounded-3xl space-y-2"></div>
-
-    <button onclick="goHome()" class="bg-purple-600 text-white font-bold py-4 rounded-2xl w-full hover:bg-purple-700 shadow-lg">
-        Play Again
-    </button>
-
-</div>
-
-<script src="js/auth.js"></script> <script src="js/game.js"></script> <script>
-    window.onload = function() {
-        // Сначала запускаем SignalR, затем загружаем саму игру
-        if (typeof startSignalR === "function") {
-            startSignalR().then(() => {
-                loadGame(); 
-            });
-        }
-    };
-</script>
 </body>
 </html>

@@ -9,16 +9,14 @@ using System.IdentityModel.Tokens.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. НАСТРОЙКА СЕРВИСОВ ---
+// --- 1. СЕРВИСЫ ---
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
 
-// Твоя база данных
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=quizflow.db"));
 
-// Настройка JWT (секретный ключ для шифрования токенов)
 var jwtKey = "SUPER_SECRET_KEY_1234567890_QUIZFLOW";
 var key = Encoding.UTF8.GetBytes(jwtKey);
 
@@ -35,100 +33,104 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// Твой CORS (важен для работы с Live Server)
 builder.Services.AddCors(options => {
-    options.AddDefaultPolicy(policy => {
-        policy.WithOrigins("http://127.0.0.1:5500", "http://localhost:5500")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-    });
+    options.AddPolicy("AllowAll", p => p
+        .SetIsOriginAllowed(_ => true) // Разрешаем любым адресам стучаться к нам (важно для тестов)
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials());
 });
 
 var app = builder.Build();
-// --- АВТОМАТИЧЕСКОЕ СОЗДАНИЕ ТАБЛИЦ ПРИ ЗАПУСКЕ ---
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated(); // Эта магия создаст все таблицы, если их нет
-}
 
 // --- 2. MIDDLEWARE ---
+app.UseCors("AllowAll");
+app.UseAuthentication();
+app.UseAuthorization();
+
 if (app.Environment.IsDevelopment()) {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseCors();
-app.UseAuthentication(); 
-app.UseAuthorization();
+// --- 3. API ЭНДПОИНТЫ ---
 
-// --- 3. ЭНДПОИНТЫ (API) ---
+// --- 3. API ЭНДПОИНТЫ ---
 
-// --- АВТОРИЗАЦИЯ (НОВОЕ) ---
-app.MapPost("/api/auth/register", async (AppDbContext db, [FromBody] UserRegistrationDto model) => {
-    if (await db.Users.AnyAsync(u => u.Email == model.Email))
-        return Results.BadRequest("User already exists");
-
-    var user = new User {
-        Username = model.Username,
-        Email = model.Email,
-        PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password)
-    };
+// 1. РЕГИСТРАЦИЯ
+app.MapPost("/api/auth/register", async ([FromBody] User user, AppDbContext db) => {
+    // Проверяем по Email, так как он теперь уникальный ключ для входа
+    if (await db.Users.AnyAsync(u => u.Email == user.Email))
+        return Results.BadRequest("User with this email already exists");
+    
     db.Users.Add(user);
     await db.SaveChangesAsync();
-    return Results.Ok(new { message = "Registration successful" });
+    return Results.Ok();
 });
 
-app.MapPost("/api/auth/login", async (AppDbContext db, [FromBody] UserLoginDto model) => {
-    var user = await db.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
-    if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
-        return Results.Unauthorized();
+// 2. ЛОГИН (Вход по Email и Password)
+app.MapPost("/api/auth/login", async ([FromBody] User loginData, AppDbContext db) => {
+    // Ищем пользователя в базе по Email и Паролю
+    var user = await db.Users.FirstOrDefaultAsync(u => 
+        u.Email == loginData.Email && u.Password == loginData.Password);
+        
+    if (user is null) return Results.Unauthorized();
 
+    // ГЕНЕРАЦИЯ ТОКЕНА (этот блок должен быть здесь)
     var tokenHandler = new JwtSecurityTokenHandler();
     var tokenDescriptor = new SecurityTokenDescriptor {
         Subject = new ClaimsIdentity(new[] { 
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim("userId", user.Id.ToString()) 
+            new Claim(ClaimTypes.Name, user.Nickname),
+            new Claim("userId", user.Id.ToString())
         }),
         Expires = DateTime.UtcNow.AddDays(7),
         SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
     };
+    
     var token = tokenHandler.CreateToken(tokenDescriptor);
-    return Results.Ok(new { token = tokenHandler.WriteToken(token), username = user.Username });
+    
+    return Results.Ok(new { 
+        token = tokenHandler.WriteToken(token), // Теперь ошибка исчезнет
+        username = user.Nickname, // Отправляем Никнейм для приветствия
+        userId = user.Id 
+    });
 });
 
-// --- ТВОИ ОРИГИНАЛЬНЫЕ ЭНДПОИНТЫ ДЛЯ КВИЗОВ ---
+// 3. ПОЛУЧЕНИЕ КВИЗОВ ДЛЯ DASHBOARD
+app.MapGet("/api/quizzes/user/{userId}", async (int userId, AppDbContext db) => {
+    // Возвращаем список квизов (пока все, так как связи с User в модели Quiz еще нет)
+    var quizzes = await db.Quizzes.Include(q => q.Questions).ToListAsync();
+    return Results.Ok(quizzes);
+});
+
+// 4. ОСТАЛЬНЫЕ МЕТОДЫ ДЛЯ КВИЗОВ
 app.MapGet("/api/quizzes", async (AppDbContext db) => 
     await db.Quizzes.Include(q => q.Questions).ToListAsync());
 
-app.MapGet("/api/quizzes/{id}", async (AppDbContext db, string id) =>
-{
-    var quiz = await db.Quizzes.Include(q => q.Questions).FirstOrDefaultAsync(q => q.Id == id);
-    return quiz is not null ? Results.Ok(quiz) : Results.NotFound();
-});
+app.MapGet("/api/quizzes/{id}", async (string id, AppDbContext db) =>
+    await db.Quizzes.Include(q => q.Questions).FirstOrDefaultAsync(q => q.Id == id) 
+    is Quiz q ? Results.Ok(q) : Results.NotFound());
 
-app.MapPost("/api/quizzes", async (AppDbContext db, Quiz quiz) => {
+app.MapPost("/api/quizzes", async ([FromBody] Quiz quiz, AppDbContext db) => {
+    if (string.IsNullOrEmpty(quiz.Id)) quiz.Id = Guid.NewGuid().ToString().Substring(0, 8);
     db.Quizzes.Add(quiz);
     await db.SaveChangesAsync();
     return Results.Created($"/api/quizzes/{quiz.Id}", quiz);
 });
 
-// SignalR Hub
-app.MapHub<QuizHub>("/quizhub");
+
+// ПУТЬ СОВПАДАЕТ С API_URL ФРОНТЕНДА
+app.MapHub<QuizHub>("/api/quizhub");
 
 app.Run();
 
-// --- 4. КЛАССЫ И МОДЕЛИ (Все твои + новые) ---
-
-public record UserRegistrationDto(string Username, string Email, string Password);
-public record UserLoginDto(string Email, string Password);
+// --- 4. МОДЕЛИ (CLASSES) ---
 
 public class User {
     public int Id { get; set; }
-    public string Username { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string PasswordHash { get; set; } = string.Empty;
+    public string Nickname { get; set; } = string.Empty; // Для приветствия
+    public string Email { get; set; } = string.Empty;    // Для входа
+    public string Password { get; set; } = string.Empty; // Для входа
 }
 
 public class Quiz {
@@ -139,17 +141,38 @@ public class Quiz {
 
 public class Question {
     public int Id { get; set; }
-    public string Q { get; set; } = string.Empty;
-    public List<string> Answers { get; set; } = new();
-    public int Correct { get; set; }
+    public string Text { get; set; } = string.Empty; // Соответствует q.text в JS
+    public List<string> Options { get; set; } = new(); // Соответствует q.options в JS
+    public int CorrectAnswerIndex { get; set; } // Соответствует q.correctAnswerIndex в JS
 }
 
-// ТВОЙ КОНТЕКСТ БД (С сохранением логики конвертации списка ответов)
+// --- 5. SIGNALR HUB ---
+
+public class QuizHub : Hub {
+    public async Task JoinLobby(string pin, string user) {
+        await Groups.AddToGroupAsync(Context.ConnectionId, pin);
+        await Clients.Group(pin).SendAsync("UpdatePlayers", new List<string> { user }); // Упрощенно для теста
+    }
+
+    public async Task StartGame(string pin) => 
+        await Clients.Group(pin).SendAsync("GameStarted");
+
+    public async Task SendScore(string pin, string user, int score) => 
+        await Clients.Group(pin).SendAsync("ReceiveScore", user, score);
+
+    public async Task TriggerNextQuestion(string pin, int index) =>
+        await Clients.Group(pin).SendAsync("NextQuestion", index);
+
+    public async Task FinishGame(string pin) =>
+        await Clients.Group(pin).SendAsync("GameFinished");
+}
+
+// --- 6. DATABASE CONTEXT ---
+
 public class AppDbContext : DbContext {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
     public DbSet<Quiz> Quizzes => Set<Quiz>();
-    public DbSet<Question> Questions => Set<Question>();
-    public DbSet<User> Users => Set<User>(); // Новая таблица
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
         modelBuilder.Entity<Quiz>()
@@ -157,31 +180,11 @@ public class AppDbContext : DbContext {
             .WithOne()
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Сохраняем твою логику: конвертируем List в строку для SQLite
         modelBuilder.Entity<Question>()
-            .Property(e => e.Answers)
+            .Property(e => e.Options)
             .HasConversion(
-                v => string.Join(',', v),
-                v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
+                v => string.Join('|', v),
+                v => v.Split('|', StringSplitOptions.RemoveEmptyEntries).ToList()
             );
     }
-}
-
-// ТВОЙ ОРИГИНАЛЬНЫЙ QUIZHUB (Все методы на месте)
-public class QuizHub : Hub {
-    public async Task JoinLobby(string pin, string user) {
-        await Groups.AddToGroupAsync(Context.ConnectionId, pin);
-        await Clients.Group(pin).SendAsync("PlayerJoined", user);
-    }
-    public async Task StartGame(string pin) => 
-        await Clients.Group(pin).SendAsync("GameStarted");
-
-    public async Task UpdateScore(string pin, string user, int score) => 
-        await Clients.Group(pin).SendAsync("ScoreUpdated", user, score);
-
-    public async Task SyncPlayers(string pin, List<string> players) => 
-        await Clients.Group(pin).SendAsync("UpdatePlayerList", players);
-
-    public async Task ShowResults(string pin) => 
-        await Clients.Group(pin).SendAsync("ShowResults");
 }
