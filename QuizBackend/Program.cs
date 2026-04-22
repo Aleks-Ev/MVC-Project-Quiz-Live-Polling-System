@@ -148,14 +148,43 @@ public class Question {
 
 // --- 5. SIGNALR HUB ---
 
+// --- 5. SIGNALR HUB ---
+
 public class QuizHub : Hub {
+    // Статический словарь: Ключ - ПИН лобби, Значение - Список имен игроков
+    // static нужен, чтобы данные не пропадали при каждом запросе
+    private static readonly Dictionary<string, List<string>> _lobbies = new();
+
     public async Task JoinLobby(string pin, string user) {
+        // Добавляем соединение в группу SignalR по ПИН-коду
         await Groups.AddToGroupAsync(Context.ConnectionId, pin);
-        await Clients.Group(pin).SendAsync("UpdatePlayers", new List<string> { user }); // Упрощенно для теста
+
+        // Если такого лобби еще нет в словаре — создаем
+        if (!_lobbies.ContainsKey(pin)) {
+            _lobbies[pin] = new List<string>();
+        }
+
+        // Добавляем игрока в список, если его там еще нет
+        if (!_lobbies[pin].Contains(user)) {
+            _lobbies[pin].Add(user);
+        }
+
+        // Отправляем ВСЕМУ лобби ОБНОВЛЕННЫЙ список всех игроков
+        await Clients.Group(pin).SendAsync("UpdatePlayers", _lobbies[pin]);
+        
+        Console.WriteLine($"User {user} joined lobby {pin}. Total players: {_lobbies[pin].Count}");
     }
 
-    public async Task StartGame(string pin) => 
+    public async Task StartGame(string pin) {
+        // Когда хост жмет старт, отправляем сигнал всем в группе
         await Clients.Group(pin).SendAsync("GameStarted");
+    }
+
+    // Очистка лобби, если нужно (опционально)
+    public override async Task OnDisconnectedAsync(Exception? exception) {
+        // Здесь в будущем можно добавить удаление игрока из списка при выходе
+        await base.OnDisconnectedAsync(exception);
+    }
 
     public async Task SendScore(string pin, string user, int score) => 
         await Clients.Group(pin).SendAsync("ReceiveScore", user, score);

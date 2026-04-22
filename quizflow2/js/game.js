@@ -10,23 +10,22 @@ let isHost = localStorage.getItem("isHost") === "true";
 let lobbyPin = localStorage.getItem("lobbyPin");
 
 // Проверяем, если API_URL уже был объявлен (например, в auth.js), используем его. 
-// Если нет — создаем.
-// Проверяем, существует ли API_URL. Если нет — объявляем локально.
-if (typeof API_URL === 'undefined') {
-    var API_URL = "http://localhost:5178/api"; 
+// Используем объект window, чтобы избежать конфликтов с const в других файлах
+if (!window.API_URL) {
+    window.API_URL = "http://localhost:5178/api";
 }
 
-// Теперь connection сможет спокойно использовать переменную
-const connection = new signalR.HubConnectionBuilder()
-    .withUrl(`${API_URL.replace('/api', '')}/api/quizhub`) // Убираем лишний /api если нужно
-    .configureLogging(signalR.LogLevel.Information)
-    .build();
+// Проверяем наличие подключения в window
+if (!window.connection) {
+    window.connection = new signalR.HubConnectionBuilder()
+        .withUrl(`${window.API_URL.replace('/api', '')}/api/quizhub`)
+        .configureLogging(signalR.LogLevel.Information)
+        .build();
+}
 
-// ---------------- SIGNALR SETUP ----------------
-const connection = new signalR.HubConnectionBuilder()
-    .withUrl(`${API_URL}/quizhub`)
-    .configureLogging(signalR.LogLevel.Information)
-    .build();
+// Создаем "псевдонимы", чтобы не переписывать весь остальной код
+var API_URL = window.API_URL;
+var connection = window.connection;
 
 // Слушатель: Обновление списка игроков
 connection.on("UpdatePlayers", (updatedPlayers) => {
@@ -40,6 +39,12 @@ connection.on("UpdatePlayers", (updatedPlayers) => {
             </li>
         `).join("");
     }
+});
+
+// Слушатель: Массовый старт игры
+connection.on("GameStarted", () => {
+    console.log("🚀 Game starting...");
+    window.location.href = "Game.html"; 
 });
 
 // Слушатель: Синхронный старт вопроса
@@ -74,19 +79,30 @@ async function startSignalR() {
 // ---------------- GAME LOGIC ----------------
 
 async function syncQuizData() {
-    const quizId = localStorage.getItem("selectedQuizId");
-    if (!quizId) return;
+    // Берем или ID выбранного квиза (для хоста), или ПИН лобби (для игрока)
+    const quizId = localStorage.getItem("selectedQuizId") || localStorage.getItem("lobbyPin");
+    
+    if (!quizId) {
+        console.error("❌ No Quiz ID found in localStorage!");
+        return;
+    }
 
     try {
-        const response = await fetch(`${API_URL}/api/quizzes/${quizId}`);
+        // ВАЖНО: Проверь, чтобы путь точно был /api/quizzes/
+        const response = await fetch(`${API_URL}/quizzes/${quizId}`);
+        
         if (response.ok) {
             const quiz = await response.json();
+            // Сохраняем вопросы
             questions = quiz.questions;
             localStorage.setItem("quiz", JSON.stringify(questions));
             console.log("✅ Questions synced:", questions.length);
+        } else {
+            console.error("❌ Server returned error:", response.status);
+            // Если квиз не найден, возможно ПИН не совпадает с ID в базе
         }
     } catch (err) {
-        console.error("Sync Error:", err);
+        console.error("🌐 Connection error:", err);
     }
 }
 
@@ -101,9 +117,12 @@ function loadLobby() {
 
 async function startGame() {
     if (!isHost) return;
-    // Отправляем сигнал всем игрокам начать игру
-    await connection.invoke("StartGame", lobbyPin);
-    window.location.href = "Game.html";
+    try {
+        // Просто уведомляем сервер, а сервер уже ответит всем через "GameStarted"
+        await connection.invoke("StartGame", lobbyPin);
+    } catch (err) {
+        console.error("Error starting game:", err);
+    }
 }
 
 function loadGame() {
