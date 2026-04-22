@@ -6,7 +6,15 @@ const API_URL = "http://localhost:5178/api"; // Убедись, что этот 
 
 function goHome() {
     const token = localStorage.getItem("userToken");
-    window.location.href = token ? "dashboard.html" : "start.html";
+    
+    if (token) {
+        // Если залогинен — летим в личный кабинет
+        window.location.href = "dashboard.html";
+    } else {
+        // Если не залогинен — отправляем на авторизацию
+        // Убедись, что файл называется именно Authorization.html
+        window.location.href = "Authorization.html";
+    }
 }
 
 function logout() {
@@ -138,7 +146,7 @@ async function renderQuizList(userId) {
                         <div class="font-bold text-lg">${quiz.title}</div>
                         <div class="text-xs opacity-60">${quiz.questions.length} questions</div>
                     </div>
-                    ${isActive ? '<span class="text-xl">✅</span>' : ''}
+                    ${isActive ? '<span class="text-xl"></span>' : ''}
                 </div>
             `;
 

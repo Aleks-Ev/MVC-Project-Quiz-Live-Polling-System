@@ -21,15 +21,24 @@
 
     <div id="quiz" class="glass p-10 rounded-[40px] shadow-2xl space-y-10 fade-in text-center">
         
-        <div class="relative w-full h-4 bg-white/10 rounded-full overflow-hidden shadow-inner">
+        <div class="relative w-full h-6 bg-gray-900/50 rounded-full overflow-hidden border border-white/5 shadow-inner">
+    
             <div id="timerBar" 
-                 class="absolute top-0 left-0 h-full bg-neon transition-all duration-100 ease-linear shadow-[0_0_15px_#C7F000]"
-                 style="width: 100%;">
+                class="absolute top-0 left-0 h-full rounded-full transition-all duration-100 ease-linear
+                        /* 1. Основной цвет и градиент */
+                        bg-gradient-to-r from-purple-500 via-pink-400 to-white
+                        /* 2. Мощное внешнее свечение (розовый ореол) */
+                        shadow-[0_0_20px_rgba(236,72,153,0.8),_0_0_40px_rgba(236,72,153,0.4)]"
+                style="width: 100%;">
+                
+                <div class="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent opacity-50"></div>
+                
+                <div class="absolute right-0 top-0 h-full w-1 bg-white shadow-[0_0_15px_#fff] blur-[1px]"></div>
             </div>
         </div>
 
         <div class="space-y-4">
-            <p id="questionNumber" class="text-neon text-xs font-black uppercase tracking-[0.3em] opacity-60">Question Loading...</p>
+            <p id="questionNumber" class="text-neon text-xs font-black uppercase tracking-[0.3em] opacity-60"></p>
             <h2 id="question" class="text-3xl md:text-4xl font-black text-white leading-tight">
                 Get ready! The question will appear here...
             </h2>

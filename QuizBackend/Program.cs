@@ -192,8 +192,15 @@ public class QuizHub : Hub {
     public async Task TriggerNextQuestion(string pin, int index) =>
         await Clients.Group(pin).SendAsync("NextQuestion", index);
 
-    public async Task FinishGame(string pin) =>
-        await Clients.Group(pin).SendAsync("GameFinished");
+    public async Task FinishGame(string pin, List<PlayerResult> finalScores) {
+        // Мы рассылаем массив результатов всем игрокам в группе
+        await Clients.Group(pin).SendAsync("GameFinished", finalScores);
+    }
+}
+
+public class PlayerResult {
+    public string Nickname { get; set; } = "";
+    public int Score { get; set; }
 }
 
 // --- 6. DATABASE CONTEXT ---

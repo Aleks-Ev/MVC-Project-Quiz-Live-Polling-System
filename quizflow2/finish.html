@@ -18,24 +18,26 @@
         
         <h1 class="text-5xl font-black text-neon tracking-tighter uppercase italic">Quiz Results</h1>
 
-        <div id="podiumSection" class="flex justify-center items-end gap-2 min-h-[300px] pt-10">
-            <div class="flex flex-col items-center">
-                <div id="name2" class="text-neon font-bold mb-2">---</div>
-                <div class="w-24 bg-white/20 rounded-t-2xl flex items-end justify-center pb-4 shadow-lg" style="height: 120px;">
-                    <span class="text-3xl font-black opacity-50">2</span>
+        <div id="podiumSection" class="flex justify-center items-end gap-3 min-h-[300px] pt-10">
+            <div class="flex flex-col items-center group">
+                <div id="name2" class="text-[#e6ff66] font-bold mb-2 drop-shadow-[0_0_8px_rgba(230,255,102,0.5)]">---</div>
+                <div class="w-24 bg-gradient-to-t from-[#e6ff66]/20 to-[#e6ff66]/50 border-t border-x border-[#e6ff66]/30 rounded-t-2xl flex items-end justify-center pb-4 shadow-[0_0_20px_rgba(230,255,102,0.5)] transition-all duration-500 group-hover:bg-[#e6ff66]/60" style="height: 120px;">
+                    <span class="text-4xl font-black text-[#e6ff66] opacity-99">2</span>
                 </div>
             </div>
-            <div class="flex flex-col items-center">
-                <div class="text-4xl mb-2">👑</div>
-                <div id="name1" class="text-neon text-2xl font-black mb-2">---</div>
-                <div class="w-32 bg-neon rounded-t-2xl flex items-end justify-center pb-6 shadow-[0_0_30px_rgba(199,240,0,0.4)]" style="height: 180px;">
-                    <span class="text-5xl font-black text-indigo">1</span>
+
+            <div class="flex flex-col items-center group">
+                <div class="text-4xl mb-2 animate-bounce"></div>
+                <div id="name1" class="text-[#C7F000] text-2xl font-black mb-2 drop-shadow-[0_0_15px_rgba(199,240,0,0.9)]">---</div>
+                <div class="w-32 bg-gradient-to-t from-[#C7F000]/20 via-[#C7F000]/80 to-[#C7F000] rounded-t-2xl flex items-end justify-center pb-6 shadow-[0_0_50px_rgba(199,240,0,0.5)] transition-all duration-500 group-hover:shadow-[0_0_70px_rgba(199,240,0,0.7)] border-t border-x border-[#C7F000]" style="height: 180px;">
+                    <span class="text-5xl font-black text-[#e6ff66] text-indigo italic">1</span>
                 </div>
             </div>
-            <div class="flex flex-col items-center">
-                <div id="name3" class="text-neon font-bold mb-2">---</div>
-                <div class="w-24 bg-white/10 rounded-t-2xl flex items-end justify-center pb-4 shadow-lg" style="height: 80px;">
-                    <span class="text-3xl font-black opacity-30">3</span>
+
+            <div class="flex flex-col items-center group">
+                <div id="name3" class="text-[#8fb800] font-bold mb-2">---</div>
+                <div class="w-24 bg-gradient-to-t from-[#8fb800]/15 to-[#8fb800]/50 border-t border-x border-[#8fb800]/20 rounded-t-2xl flex items-end justify-center pb-4 shadow-sm transition-all duration-500 group-hover:bg-[#8fb800]/50" style="height: 80px;">
+                    <span class="text-4xl font-black text-[#e6ff66] opacity-99">3</span>
                 </div>
             </div>
         </div>
@@ -48,11 +50,11 @@
 
         <div class="flex flex-wrap justify-center gap-4 pt-6 border-t border-white/10">
             <button onclick="downloadResults()" class="bg-white/10 hover:bg-white/20 text-neon px-6 py-3 rounded-2xl font-bold transition-all border border-white/10">
-                📥 Download Results
+                 Download Results
             </button>
             
             <button id="hostStatsBtn" onclick="toggleStats()" class="hidden bg-indigo/50 hover:bg-indigo text-white px-6 py-3 rounded-2xl font-bold transition-all">
-                📊 Show Statistics
+                 Show Statistics
             </button>
 
             <button onclick="location.href='dashboard.html'" class="btn-neon px-10 py-3 rounded-2xl font-bold shadow-lg">
@@ -98,11 +100,11 @@
         if (s.classList.contains('hidden')) {
             s.classList.remove('hidden');
             p.classList.add('hidden');
-            btn.innerText = "🏆 Show Podium";
+            btn.innerText = " Show Podium";
         } else {
             s.classList.add('hidden');
             p.classList.remove('hidden');
-            btn.innerText = "📊 Show Statistics";
+            btn.innerText = " Show Statistics";
         }
     }
 

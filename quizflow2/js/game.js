@@ -10,12 +10,12 @@ let isHost = localStorage.getItem("isHost") === "true";
 let lobbyPin = localStorage.getItem("lobbyPin");
 
 // Проверяем, если API_URL уже был объявлен (например, в auth.js), используем его. 
-// Используем объект window, чтобы избежать конфликтов с const в других файлах
+// 1. Проверяем API_URL в window
 if (!window.API_URL) {
     window.API_URL = "http://localhost:5178/api";
 }
 
-// Проверяем наличие подключения в window
+// 2. Проверяем connection в window
 if (!window.connection) {
     window.connection = new signalR.HubConnectionBuilder()
         .withUrl(`${window.API_URL.replace('/api', '')}/api/quizhub`)
@@ -23,12 +23,13 @@ if (!window.connection) {
         .build();
 }
 
-// Создаем "псевдонимы", чтобы не переписывать весь остальной код
-var API_URL = window.API_URL;
-var connection = window.connection;
+// 3. Используем другие имена для локальных переменных, 
+// чтобы не пытаться перезаписать константы из auth.js
+var activeAPI = window.API_URL;
+var activeConn = window.connection;
 
 // Слушатель: Обновление списка игроков
-connection.on("UpdatePlayers", (updatedPlayers) => {
+activeConn.on("UpdatePlayers", (updatedPlayers) => {
     players = updatedPlayers;
     const list = document.getElementById("players");
     if (list) {
@@ -42,34 +43,36 @@ connection.on("UpdatePlayers", (updatedPlayers) => {
 });
 
 // Слушатель: Массовый старт игры
-connection.on("GameStarted", () => {
+activeConn.on("GameStarted", () => {
     console.log("🚀 Game starting...");
     window.location.href = "Game.html"; 
 });
 
 // Слушатель: Синхронный старт вопроса
-connection.on("NextQuestion", (questionIndex) => {
+activeConn.on("NextQuestion", (questionIndex) => {
     currentQuestion = questionIndex;
     showQuestion();
 });
 
 // Слушатель: Сбор очков в реальном времени (для хоста)
-connection.on("ReceiveScore", (nickname, score) => {
+activeConn.on("ReceiveScore", (nickname, score) => {
     scores[nickname] = score;
     checkIfAllAnswered();
 });
 
-// Слушатель: Финиш игры
-connection.on("GameFinished", () => {
+// Слушатель финиша (у всех игроков)
+activeConn.on("GameFinished", (finalScoresArray) => {
+    // Сохраняем именно под тем ключом, который ищет finish.html
+    localStorage.setItem("finalScores", JSON.stringify(finalScoresArray));
     window.location.href = "finish.html";
 });
 
 async function startSignalR() {
     try {
-        await connection.start();
+        await activeConn.start();
         console.log("🟢 Connected to Hub");
         if (lobbyPin) {
-            await connection.invoke("JoinLobby", lobbyPin, myNickname);
+            await activeConn.invoke("JoinLobby", lobbyPin, myNickname);
         }
     } catch (err) {
         console.error("SignalR Error: ", err);
@@ -89,14 +92,14 @@ async function syncQuizData() {
 
     try {
         // ВАЖНО: Проверь, чтобы путь точно был /api/quizzes/
-        const response = await fetch(`${API_URL}/quizzes/${quizId}`);
+        const response = await fetch(`${activeAPI}/quizzes/${quizId}`);
         
         if (response.ok) {
             const quiz = await response.json();
             // Сохраняем вопросы
             questions = quiz.questions;
             localStorage.setItem("quiz", JSON.stringify(questions));
-            console.log("✅ Questions synced:", questions.length);
+            console.log(" Questions synced:", questions.length);
         } else {
             console.error("❌ Server returned error:", response.status);
             // Если квиз не найден, возможно ПИН не совпадает с ID в базе
@@ -119,7 +122,7 @@ async function startGame() {
     if (!isHost) return;
     try {
         // Просто уведомляем сервер, а сервер уже ответит всем через "GameStarted"
-        await connection.invoke("StartGame", lobbyPin);
+        await activeConn.invoke("StartGame", lobbyPin);
     } catch (err) {
         console.error("Error starting game:", err);
     }
@@ -192,14 +195,14 @@ async function submitAnswer(index) {
 
     // Хост не участвует в рейтинге
     if (!isHost) {
-        await connection.invoke("SendScore", lobbyPin, myNickname, points);
+        await activeConn.invoke("SendScore", lobbyPin, myNickname, points);
     }
 
     // Если это был последний вопрос, ждем хоста. Если нет - переключаем сами (в демо)
     // В реальной синхронной игре хост жмет "Next", но для удобства сделаем задержку:
     setTimeout(() => {
         if (isHost) {
-            connection.invoke("TriggerNextQuestion", lobbyPin, currentQuestion + 1);
+            activeConn.invoke("TriggerNextQuestion", lobbyPin, currentQuestion + 1);
         }
     }, 2000);
 }
@@ -208,7 +211,7 @@ function handleQuizEnd() {
     const quizArea = document.getElementById("quiz");
     if (quizArea) {
         quizArea.innerHTML = `
-            <h2 class="text-3xl font-black text-neon">QUIZ FINISHED!</h2>
+            <h2 class="text-3xl font-white text-neon">QUIZ FINISHED!</h2>
             <p class="opacity-70 mt-4">${isHost ? "Wait for all players to finish..." : "Waiting for the Host to publish results..."}</p>
             <div id="hostControls" class="mt-6"></div>
         `;
@@ -227,8 +230,36 @@ function showHostPublishButton() {
     `;
 }
 
+// Функция хоста для публикации
 async function publishResults() {
-    await connection.invoke("FinishGame", lobbyPin);
+    // Превращаем { "Ivan": 100, "Oleg": 80 } в [{nickname: "Ivan", score: 100}, ...]
+    const resultsArray = Object.entries(scores).map(([name, score]) => ({
+        nickname: name,
+        score: score
+    }));
+
+    // Отправляем всем через SignalR (нужно добавить аргумент в invoke)
+    await activeConn.invoke("FinishGame", lobbyPin, resultsArray);
+}
+
+function loadResults() {
+    const resultsRaw = localStorage.getItem("finalResults");
+    if (!resultsRaw) return;
+
+    const results = JSON.parse(resultsRaw);
+    // Превращаем объект в массив и сортируем по очкам (от большего к меньшему)
+    const sorted = Object.entries(results)
+        .sort(([,a], [,b]) => b - a);
+
+    // Пример заполнения пьедестала (нужны ID элементов в HTML)
+    if (sorted[0]) document.getElementById("rank-1-name").innerText = sorted[0][0];
+    if (sorted[1]) document.getElementById("rank-2-name").innerText = sorted[1][0];
+    if (sorted[2]) document.getElementById("rank-3-name").innerText = sorted[2][0];
+}
+
+// Вызываем при загрузке страницы результатов
+if (window.location.pathname.includes("finish.html")) {
+    loadResults();
 }
 
 // ---------------- INIT ----------------
