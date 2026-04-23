@@ -32,7 +32,7 @@ function addQuestion() {
         return alert("Please fill all fields and select the correct answer!");
     }
 
-    // Добавляем в массив (структура совпадает с требованиями БД)
+    // Добавляем в массив
     createdQuestions.push({
         text: questionText,
         options: answers,
@@ -41,11 +41,21 @@ function addQuestion() {
 
     alert(`Question ${createdQuestions.length} added!`);
 
-    // Очистка полей
+    // 1. Очистка полей
     document.getElementById("questionInput").value = "";
     document.querySelectorAll(".answer").forEach(a => a.value = "");
     document.getElementById("correctIndex").value = "";
-}
+
+    const step = document.getElementById("stepQuestions");
+    step.classList.add("hidden"); 
+    setTimeout(() => {
+        step.classList.remove("hidden");
+        document.getElementById("questionInput").focus();
+    }, 10);
+
+        // 3. Автоматический фокус на поле вопроса (удобно для ввода следующего)
+        document.getElementById("questionInput").focus();
+    }
 
 async function saveQuizToAccount() {
     if (createdQuestions.length === 0) return alert("Add at least one question!");

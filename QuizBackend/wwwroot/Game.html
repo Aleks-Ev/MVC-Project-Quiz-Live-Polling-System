@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>QuizFlow | Live Game</title>
+    <link rel="icon" href="kotEmine.png" type="image/x-icon">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script src="js/game.js" defer></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="min-h-screen font-sans relative p-4 flex items-center justify-center overflow-x-hidden bg-[#0a0a0a]">
+
+<div class="blob"></div>
+<div class="blob2"></div>
+
+<main id="gameContainer" class="w-full max-w-3xl z-10 relative">
+
+    <div id="quiz" class="glass p-6 md:p-10 rounded-[30px] md:rounded-[40px] shadow-2xl space-y-6 md:space-y-10 fade-in text-center">
+        
+        <div class="relative w-full h-4 md:h-6 bg-gray-900/50 rounded-full overflow-hidden border border-white/5 shadow-inner">
+            <div id="timerBar" 
+                class="absolute top-0 left-0 h-full rounded-full transition-all duration-100 ease-linear
+                       bg-gradient-to-r from-purple-500 via-pink-400 to-white
+                       shadow-[0_0_20px_rgba(236,72,153,0.8),_0_0_40px_rgba(236,72,153,0.4)]"
+                style="width: 100%;">
+                <div class="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent opacity-50"></div>
+                <div class="absolute right-0 top-0 h-full w-1 bg-white shadow-[0_0_15px_#fff] blur-[1px]"></div>
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <p id="questionNumber" class="text-neon text-[10px] md:text-xs font-black uppercase tracking-[0.3em] opacity-60"></p>
+            <h2 id="question" class="text-2xl md:text-4xl font-black text-white leading-tight">
+                Get ready! The question will appear here...
+            </h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+            <button onclick="submitAnswer(0)" class="option-btn glass p-5 md:p-6 rounded-2xl md:rounded-3xl font-bold text-lg md:text-xl text-white hover:scale-[1.02] active:scale-95 transition-all border border-white/5 hover:border-neon">
+                ...
+            </button>
+            <button onclick="submitAnswer(1)" class="option-btn glass p-5 md:p-6 rounded-2xl md:rounded-3xl font-bold text-lg md:text-xl text-white hover:scale-[1.02] active:scale-95 transition-all border border-white/5 hover:border-neon">
+                ...
+            </button>
+            <button onclick="submitAnswer(2)" class="option-btn glass p-5 md:p-6 rounded-2xl md:rounded-3xl font-bold text-lg md:text-xl text-white hover:scale-[1.02] active:scale-95 transition-all border border-white/5 hover:border-neon">
+                ...
+            </button>
+            <button onclick="submitAnswer(3)" class="option-btn glass p-5 md:p-6 rounded-2xl md:rounded-3xl font-bold text-lg md:text-xl text-white hover:scale-[1.02] active:scale-95 transition-all border border-white/5 hover:border-neon">
+                ...
+            </button>
+        </div>
+
+        <div id="waitingMsg" class="hidden animate-pulse italic text-neon opacity-70 pt-4 text-sm md:text-base">
+            Answer sent! Waiting for other players...
+        </div>
+    </div>
+
+</main>
+
+<footer class="absolute bottom-4 left-0 w-full text-center z-10 opacity-30 text-[8px] md:text-[10px] text-neon uppercase tracking-widest">
+    Sync Session: <span id="sessionStatus">Connected</span>
+</footer>
+
+</body>
+</html>

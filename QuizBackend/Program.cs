@@ -122,6 +122,9 @@ app.MapPost("/api/quizzes", async ([FromBody] Quiz quiz, AppDbContext db) => {
 // ПУТЬ СОВПАДАЕТ С API_URL ФРОНТЕНДА
 app.MapHub<QuizHub>("/api/quizhub");
 
+app.UseDefaultFiles(); // Позволяет открывать index.html по умолчанию
+app.UseStaticFiles();  // Разрешает отдавать файлы из папки wwwroot
+
 app.Run();
 
 // --- 4. МОДЕЛИ (CLASSES) ---
@@ -173,6 +176,14 @@ public class QuizHub : Hub {
         await Clients.Group(pin).SendAsync("UpdatePlayers", _lobbies[pin]);
         
         Console.WriteLine($"User {user} joined lobby {pin}. Total players: {_lobbies[pin].Count}");
+    }
+
+    public async Task ClearLobbyServer(string pin) {
+        if (_lobbies.ContainsKey(pin)) {
+            _lobbies[pin].Clear();
+            // Уведомляем всех (хотя в лобби еще никого нет), что список пуст
+            await Clients.Group(pin).SendAsync("UpdatePlayers", new List<string>());
+        }
     }
 
     public async Task StartGame(string pin) {

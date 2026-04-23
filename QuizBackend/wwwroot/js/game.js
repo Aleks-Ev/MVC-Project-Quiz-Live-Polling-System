@@ -8,17 +8,22 @@ let questions = [];
 let myNickname = localStorage.getItem("userName") || "Guest";
 let isHost = localStorage.getItem("isHost") === "true";
 let lobbyPin = localStorage.getItem("lobbyPin");
+let myTotalScore = 0; // Накопительный счет игрока
 
 // Проверяем, если API_URL уже был объявлен (например, в auth.js), используем его. 
 // 1. Проверяем API_URL в window
 if (!window.API_URL) {
-    window.API_URL = "http://localhost:5178/api";
+    window.API_URL = "https://ferret-detention-giggling.ngrok-free.dev/api";
 }
 
 // 2. Проверяем connection в window
 if (!window.connection) {
     window.connection = new signalR.HubConnectionBuilder()
-        .withUrl(`${window.API_URL.replace('/api', '')}/api/quizhub`)
+        .withUrl("https://ferret-detention-giggling.ngrok-free.dev/api/quizhub", {
+            headers: {
+                "ngrok-skip-browser-warning": "69420"
+            }
+        })
         .configureLogging(signalR.LogLevel.Information)
         .build();
 }
@@ -57,13 +62,16 @@ activeConn.on("NextQuestion", (questionIndex) => {
 // Слушатель: Сбор очков в реальном времени (для хоста)
 activeConn.on("ReceiveScore", (nickname, score) => {
     scores[nickname] = score;
-    checkIfAllAnswered();
+    //checkIfAllAnswered();
 });
 
 // Слушатель финиша (у всех игроков)
 activeConn.on("GameFinished", (finalScoresArray) => {
-    // Сохраняем именно под тем ключом, который ищет finish.html
-    localStorage.setItem("finalScores", JSON.stringify(finalScoresArray));
+    console.log("🏁 Финальные очки от сервера:", finalScoresArray);
+    
+    // ВАЖНО: сохраняем под ключом 'finalResults'
+    localStorage.setItem("finalResults", JSON.stringify(finalScoresArray));
+    
     window.location.href = "finish.html";
 });
 
@@ -92,7 +100,14 @@ async function syncQuizData() {
 
     try {
         // ВАЖНО: Проверь, чтобы путь точно был /api/quizzes/
-        const response = await fetch(`${activeAPI}/quizzes/${quizId}`);
+        const response = await fetch(`${activeAPI}/quizzes/${quizId}`, {
+            method: "GET", // или POST, смотря что там было
+            headers: {
+                "Content-Type": "application/json",
+                // ВОТ ЭТА СТРОЧКА:
+                "ngrok-skip-browser-warning": "69420"
+            }
+        });
         
         if (response.ok) {
             const quiz = await response.json();
@@ -109,17 +124,46 @@ async function syncQuizData() {
     }
 }
 
-function loadLobby() {
+async function loadLobby() {
+    // 1. Локальная очистка (твой код)
+    players = []; 
+    scores = {}; 
+    myTotalScore = 0;
+    localStorage.removeItem("finalResults");
+    localStorage.removeItem("finalScores");
+
+    // 2. Серверная очистка (Добавляем это!)
+    // Если я ХОСТ и соединение уже есть, просим сервер забыть старых игроков
+    if (isHost && window.connection && window.connection.state === signalR.HubConnectionState.Connected) {
+        try {
+            await window.connection.invoke("ClearLobbyServer", lobbyPin);
+            console.log("🧹 Список игроков на сервере успешно очищен");
+        } catch (err) {
+            console.error("Не удалось очистить лобби на сервере:", err);
+        }
+    }
+
+    // 3. Отображение ПИН-кода (твой код)
     const pinDisplay = document.getElementById("pin");
     if (pinDisplay) pinDisplay.innerText = lobbyPin || "---";
     
-    // Скрываем кнопку старта для обычных игроков
+    // 4. Права доступа (твой код)
     const startBtn = document.querySelector("button[onclick='startGame()']");
-    if (startBtn && !isHost) startBtn.style.display = "none";
+    if (startBtn) {
+        startBtn.style.display = isHost ? "block" : "none";
+    }
+
+    console.log("🚀 Лобби готово. Роль:", isHost ? "HOST" : "PLAYER");
 }
 
 async function startGame() {
     if (!isHost) return;
+
+    // ОЧИЩАЕМ СТАРЫЕ ДАННЫЕ ПЕРЕД НАЧАЛОМ
+    localStorage.removeItem("finalResults"); 
+    scores = {}; 
+    myTotalScore = 0;
+
     try {
         // Просто уведомляем сервер, а сервер уже ответит всем через "GameStarted"
         await activeConn.invoke("StartGame", lobbyPin);
@@ -178,30 +222,46 @@ function startTimer() {
 async function submitAnswer(index) {
     clearInterval(timerInterval);
     
-    // Блокируем кнопки
+    // 1. Блокируем кнопки, чтобы нельзя было нажать дважды
     const options = document.querySelectorAll(".option-btn");
     options.forEach(btn => btn.classList.add("opacity-50", "pointer-events-none"));
 
-    let points = 0;
+    // 2. Считаем очки за ТЕКУЩИЙ вопрос
+    let currentQuestionPoints = 0;
     const correctIdx = questions[currentQuestion].correctAnswerIndex;
 
     if (index === correctIdx) {
-        points = Math.round(timeLeft * 10); // Очки зависят от скорости
+        // Рассчитываем бонус за скорость
+        currentQuestionPoints = Math.round(timeLeft * 10); 
+        
+        // Прибавляем к ОБЩЕМУ счету игрока
+        myTotalScore += currentQuestionPoints;
+
+        // Подсвечиваем правильный выбор
         if (options[index]) {
             options[index].classList.remove("opacity-50");
             options[index].classList.add("bg-neon", "text-indigo");
         }
+        console.log(`✅ Правильно! +${currentQuestionPoints} очков. Всего: ${myTotalScore}`);
+    } else {
+        console.log(`❌ Ошибка. Правильный индекс был: ${correctIdx}. Всего очков: ${myTotalScore}`);
     }
 
-    // Хост не участвует в рейтинге
+    // 3. Отправляем ОБЩИЙ накопленный счет на сервер (SignalR)
+    // Хост не участвует в рейтинге, только обычные игроки
     if (!isHost) {
-        await activeConn.invoke("SendScore", lobbyPin, myNickname, points);
+        try {
+            // ВАЖНО: Отправляем myTotalScore, а не points за один вопрос
+            await activeConn.invoke("SendScore", lobbyPin, myNickname, myTotalScore);
+        } catch (err) {
+            console.error("Ошибка отправки очков:", err);
+        }
     }
 
-    // Если это был последний вопрос, ждем хоста. Если нет - переключаем сами (в демо)
-    // В реальной синхронной игре хост жмет "Next", но для удобства сделаем задержку:
+    // 4. Переход к следующему вопросу (через задержку 2 секунды)
     setTimeout(() => {
         if (isHost) {
+            // Если это хост, он дает команду серверу переключить вопрос для ВСЕХ
             activeConn.invoke("TriggerNextQuestion", lobbyPin, currentQuestion + 1);
         }
     }, 2000);
@@ -232,35 +292,57 @@ function showHostPublishButton() {
 
 // Функция хоста для публикации
 async function publishResults() {
-    // Превращаем { "Ivan": 100, "Oleg": 80 } в [{nickname: "Ivan", score: 100}, ...]
+    console.log("Current scores object:", scores); // Посмотри в консоль хоста перед нажатием!
+
     const resultsArray = Object.entries(scores).map(([name, score]) => ({
         nickname: name,
         score: score
     }));
 
-    // Отправляем всем через SignalR (нужно добавить аргумент в invoke)
+    if (resultsArray.length === 0) {
+        alert("Wait! No scores collected yet.");
+        return;
+    }
+
     await activeConn.invoke("FinishGame", lobbyPin, resultsArray);
 }
 
-function loadResults() {
-    const resultsRaw = localStorage.getItem("finalResults");
-    if (!resultsRaw) return;
+//function loadResults() {
+    //const resultsRaw = localStorage.getItem("finalResults");
+    //if (!resultsRaw) {
+        //document.getElementById("rank-1-name").innerText = "—";
+        //document.getElementById("rank-2-name").innerText = "—";
+        //document.getElementById("rank-3-name").innerText = "—";
+        //return;
+    //}
 
-    const results = JSON.parse(resultsRaw);
-    // Превращаем объект в массив и сортируем по очкам (от большего к меньшему)
-    const sorted = Object.entries(results)
-        .sort(([,a], [,b]) => b - a);
+    //const results = JSON.parse(resultsRaw); 
+    // results теперь это массив: [{nickname: "Ivan", score: 100}, ...]
 
-    // Пример заполнения пьедестала (нужны ID элементов в HTML)
-    if (sorted[0]) document.getElementById("rank-1-name").innerText = sorted[0][0];
-    if (sorted[1]) document.getElementById("rank-2-name").innerText = sorted[1][0];
-    if (sorted[2]) document.getElementById("rank-3-name").innerText = sorted[2][0];
-}
+    // Сортируем массив по score (от большего к меньшему)
+    //const sorted = results.sort((a, b) => b.score - a.score);
+
+    // 1. Заполняем подиум (имена)
+    //if (sorted[0]) document.getElementById("rank-1-name").innerText = sorted[0].nickname;
+    //if (sorted[1]) document.getElementById("rank-2-name").innerText = sorted[1].nickname;
+    //if (sorted[2]) document.getElementById("rank-3-name").innerText = sorted[2].nickname;
+
+    // 2. Заполняем таблицу (Detailed Statistics), если она есть в HTML
+    //const list = document.getElementById("resultsList"); // Убедись, что такой ID есть в finish.html
+    //if (list) {
+        //list.innerHTML = sorted.map((p, i) => `
+            //<div class="flex justify-between items-center bg-white/5 p-4 rounded-xl mb-2">
+                //<span class="font-bold text-neon">#${i + 1} ${p.nickname}</span>
+                //<span class="font-mono">${p.score} pts</span>
+            //</div>
+        //`).join("");
+    //}
+//}
 
 // Вызываем при загрузке страницы результатов
-if (window.location.pathname.includes("finish.html")) {
-    loadResults();
-}
+//if (window.location.pathname.includes("finish.html")) {
+    //loadResults();
+//}
 
 // ---------------- INIT ----------------
 window.onload = async function () {

@@ -1,6 +1,6 @@
 // ---------------- GLOBAL STATE ----------------
 let selectedQuizId = localStorage.getItem("selectedQuizId") || null;
-const API_URL = "http://localhost:5178/api"; // Убедись, что этот адрес совпадает с твоим Backend
+const API_URL = "https://ferret-detention-giggling.ngrok-free.dev/api"; // Убедись, что этот адрес совпадает с твоим Backend
 
 // ---------------- NAVIGATION ----------------
 
@@ -34,7 +34,10 @@ async function login() {
     try {
         const response = await fetch(`${API_URL}/auth/login`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "69420" // ДОБАВЛЕНО
+            },
             body: JSON.stringify({ email: email, password: pass })
         });
 
@@ -73,7 +76,10 @@ async function register() {
     try {
         const response = await fetch(`${API_URL}/auth/register`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "69420" // ДОБАВЛЕНО
+            },
             body: JSON.stringify({ 
                 nickname: name, 
                 email: email, 
@@ -117,10 +123,10 @@ async function renderQuizList(userId) {
     if (!listCont) return;
 
     try {
-        // Запрашиваем квизы только этого пользователя
         const response = await fetch(`${API_URL}/quizzes/user/${userId}`, {
             headers: {
-                "Authorization": "Bearer " + localStorage.getItem("userToken")
+                "Authorization": "Bearer " + localStorage.getItem("userToken"),
+                "ngrok-skip-browser-warning": "69420" // ДОБАВЛЕНО
             }
         });
         

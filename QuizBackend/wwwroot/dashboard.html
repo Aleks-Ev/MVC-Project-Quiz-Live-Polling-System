@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizFlow | My Dashboard</title>
+    <link rel="icon" href="kotEmine.png" type="image/x-icon">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script src="js/auth.js" defer></script>
+    <link rel="stylesheet" href="style.css">
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem("userToken");
+            if (!token || token === "undefined") {
+                // window.location.href = "Authorization.html"; 
+            } else {
+                displayUserDashboard();
+            }
+        });
+    </script>
+</head>
+
+<body class="min-h-screen font-sans p-4 md:p-6 relative overflow-x-hidden bg-[#0a0a0a]">
+
+<div class="blob"></div>
+<div class="blob2"></div>
+
+<nav class="flex flex-col md:flex-row justify-between items-center max-w-5xl mx-auto mb-8 md:mb-10 z-10 relative glass px-4 md:px-6 py-4 rounded-3xl shadow-xl gap-4">
+    
+    <div id="userGreeting" class="text-lg md:text-xl font-black text-neon tracking-tight">
+        Hi, Loading...
+    </div>
+
+    <div class="flex items-center space-x-4 md:space-x-6 w-full md:w-auto justify-between md:justify-end">
+        <button onclick="logout()" 
+            class="text-neon opacity-70 hover:opacity-100 font-bold text-sm md:text-base transition-all border-b-2 border-transparent hover:border-neon">
+            Sign Out
+        </button>
+
+        <button id="createLobbyBtn"
+            onclick="createLobbyFromSelected()" 
+            disabled 
+            class="btn-neon px-5 md:px-8 py-2 md:py-3 rounded-xl md:rounded-2xl font-bold opacity-50 cursor-not-allowed transition-all transform active:scale-95 shadow-lg text-sm md:text-base">
+            Create Lobby
+        </button>
+    </div>
+</nav>
+
+<main class="max-w-3xl mx-auto space-y-6 md:space-y-8 z-10 relative fade-in">
+
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 px-2">
+        <div>
+            <h2 class="text-3xl md:text-4xl font-black text-neon">My Quizzes</h2>
+            <p class="text-neon opacity-60 text-xs md:text-sm">Select a quiz to start a game lobby</p>
+        </div>
+        
+        <button onclick="location.href='CreateQuiz.html'" 
+            class="w-full md:w-auto bg-white/10 hover:bg-white/20 text-neon px-5 py-2.5 rounded-xl text-sm font-bold transition-all border border-white/10 text-center">
+            + New Quiz
+        </button>
+    </div>
+    
+    <div id="quizList" class="grid gap-3 md:gap-4 min-h-[250px] glass p-4 md:p-6 rounded-3xl shadow-inner overflow-y-auto max-h-[50vh] md:max-h-[60vh]">
+        <div class="flex flex-col items-center justify-center space-y-4 opacity-40 py-10 text-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-neon"></div>
+            <p class="italic text-sm">Synchronizing with database...</p>
+        </div>
+    </div>
+
+</main>
+
+<footer class="mt-10 md:mt-20 pb-6 text-center z-10 relative opacity-30 text-[10px] md:text-xs text-neon uppercase tracking-widest">
+    QuizFlow Engine v2.0 | Secured Session
+</footer>
+
+</body>
+</html>
