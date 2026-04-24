@@ -90,34 +90,33 @@ async function startSignalR() {
 // ---------------- GAME LOGIC ----------------
 
 async function syncQuizData() {
-    // Берем или ID выбранного квиза (для хоста), или ПИН лобби (для игрока)
     const quizId = localStorage.getItem("selectedQuizId") || localStorage.getItem("lobbyPin");
-    
+    const token = localStorage.getItem("userToken"); // ОБЯЗАТЕЛЬНО достаем токен
+
     if (!quizId) {
-        console.error("❌ No Quiz ID found in localStorage!");
+        console.error("❌ No Quiz ID found!");
         return;
     }
 
     try {
-        // ВАЖНО: Проверь, чтобы путь точно был /api/quizzes/
         const response = await fetch(`${activeAPI}/quizzes/${quizId}`, {
-            method: "GET", // или POST, смотря что там было
+            method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                // ВОТ ЭТА СТРОЧКА:
+                // ДОБАВЛЯЕМ АВТОРИЗАЦИЮ:
+                "Authorization": `Bearer ${token}`, 
                 "ngrok-skip-browser-warning": "69420"
             }
         });
         
         if (response.ok) {
             const quiz = await response.json();
-            // Сохраняем вопросы
             questions = quiz.questions;
             localStorage.setItem("quiz", JSON.stringify(questions));
-            console.log(" Questions synced:", questions.length);
-        } else {
-            console.error("❌ Server returned error:", response.status);
-            // Если квиз не найден, возможно ПИН не совпадает с ID в базе
+            console.log("✅ Questions synced:", questions.length);
+        } else if (response.status === 401) {
+            console.error("❌ Auth Error: Token is missing or expired");
+            // Можно редиректнуть на логин, если это критично
         }
     } catch (err) {
         console.error("🌐 Connection error:", err);

@@ -43,6 +43,12 @@ builder.Services.AddCors(options => {
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated(); // Это автоматически создаст файл и все таблицы
+}
+
 // --- 2. MIDDLEWARE ---
 app.UseCors("AllowAll");
 app.UseAuthentication();
@@ -104,19 +110,43 @@ app.MapGet("/api/quizzes/user/{userId}", async (int userId, AppDbContext db) => 
 });
 
 // 4. ОСТАЛЬНЫЕ МЕТОДЫ ДЛЯ КВИЗОВ
-app.MapGet("/api/quizzes", async (AppDbContext db) => 
-    await db.Quizzes.Include(q => q.Questions).ToListAsync());
+// 3. ПОЛУЧЕНИЕ КВИЗОВ (Только своих)
+// Добавляем .RequireAuthorization(), чтобы только вошедшие юзеры имели доступ
+app.MapGet("/api/quizzes", async (AppDbContext db, ClaimsPrincipal user) => {
+    // Извлекаем userId из Claim, который мы положили туда при логине
+    var userIdClaim = user.FindFirst("userId")?.Value;
+    if (userIdClaim == null) return Results.Unauthorized();
+    
+    int userId = int.Parse(userIdClaim);
+
+    // Фильтруем: берем только те квизы, которые создал этот юзер
+    var quizzes = await db.Quizzes
+        .Where(q => q.UserId == userId)
+        .Include(q => q.Questions)
+        .ToListAsync();
+
+    return Results.Ok(quizzes);
+}).RequireAuthorization();
 
 app.MapGet("/api/quizzes/{id}", async (string id, AppDbContext db) =>
     await db.Quizzes.Include(q => q.Questions).FirstOrDefaultAsync(q => q.Id == id) 
     is Quiz q ? Results.Ok(q) : Results.NotFound());
 
-app.MapPost("/api/quizzes", async ([FromBody] Quiz quiz, AppDbContext db) => {
-    if (string.IsNullOrEmpty(quiz.Id)) quiz.Id = Guid.NewGuid().ToString().Substring(0, 8);
+// 4. СОЗДАНИЕ КВИЗА (С привязкой к автору)
+app.MapPost("/api/quizzes", async ([FromBody] Quiz quiz, AppDbContext db, ClaimsPrincipal user) => {
+    var userIdClaim = user.FindFirst("userId")?.Value;
+    if (userIdClaim == null) return Results.Unauthorized();
+    
+    // Привязываем квиз к текущему пользователю
+    quiz.UserId = int.Parse(userIdClaim);
+
+    if (string.IsNullOrEmpty(quiz.Id)) 
+        quiz.Id = Guid.NewGuid().ToString().Substring(0, 8);
+
     db.Quizzes.Add(quiz);
     await db.SaveChangesAsync();
     return Results.Created($"/api/quizzes/{quiz.Id}", quiz);
-});
+}).RequireAuthorization();
 
 
 // ПУТЬ СОВПАДАЕТ С API_URL ФРОНТЕНДА
@@ -140,6 +170,7 @@ public class Quiz {
     public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public List<Question> Questions { get; set; } = new();
+    public int UserId { get; set; }
 }
 
 public class Question {

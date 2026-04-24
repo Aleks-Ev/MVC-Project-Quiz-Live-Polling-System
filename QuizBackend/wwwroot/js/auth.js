@@ -123,16 +123,25 @@ async function renderQuizList(userId) {
     if (!listCont) return;
 
     try {
-        const response = await fetch(`${API_URL}/quizzes/user/${userId}`, {
+        // Мы НЕ передаем userId в URL, бэкенд вытащит его из JWT-токена
+        const response = await fetch(`${API_URL}/quizzes`, {
+            method: "GET",
             headers: {
                 "Authorization": "Bearer " + localStorage.getItem("userToken"),
-                "ngrok-skip-browser-warning": "69420" // ДОБАВЛЕНО
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "69420"
             }
         });
+
+        if (response.status === 401) {
+            console.warn("Токен истек или неверный");
+            logout();
+            return;
+        }
         
         const quizzes = await response.json();
 
-        if (quizzes.length === 0) {
+        if (!quizzes || quizzes.length === 0) {
             listCont.innerHTML = `<p class="text-neon opacity-50 italic text-center">You haven't created any quizzes yet...</p>`;
             return;
         }
@@ -152,13 +161,13 @@ async function renderQuizList(userId) {
                         <div class="font-bold text-lg">${quiz.title}</div>
                         <div class="text-xs opacity-60">${quiz.questions.length} questions</div>
                     </div>
-                    ${isActive ? '<span class="text-xl"></span>' : ''}
                 </div>
             `;
 
             card.onclick = () => { 
                 selectedQuizId = quiz.id; 
                 localStorage.setItem("selectedQuizId", quiz.id);
+                // Перерисовываем список, чтобы подсветить выбранный
                 renderQuizList(userId); 
                 toggleLobbyBtn(true);
             };
@@ -167,7 +176,7 @@ async function renderQuizList(userId) {
         });
     } catch (err) {
         console.error("Error loading quizzes:", err);
-        listCont.innerHTML = `<p class="text-red-500">Error loading your quizzes.</p>`;
+        listCont.innerHTML = `<p class="text-red-500 text-center">Error connection to server.</p>`;
     }
 }
 

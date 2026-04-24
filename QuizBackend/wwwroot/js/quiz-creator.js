@@ -61,43 +61,34 @@ async function saveQuizToAccount() {
     if (createdQuestions.length === 0) return alert("Add at least one question!");
 
     const title = document.getElementById("quizTitle").value.trim();
-    const userId = localStorage.getItem("userId");
     const token = localStorage.getItem("userToken");
 
-    if (!userId || !token) {
+    if (!token) {
         alert("Session expired. Please log in again.");
         window.location.href = "Authorization.html";
         return;
     }
 
-    // Формируем объект для API
     const quizData = {
         title: title,
-        authorId: userId, // Привязываем квиз к пользователю
         questions: createdQuestions
+        // userId мы больше не шлем вручную, бэкенд возьмет его из токена!
     };
 
     try {
-        console.log("🚀 Sending quiz to server...", quizData);
-        
         const response = await fetch(`${API_URL}/quizzes`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}` // Передаем токен безопасности
+                "Authorization": `Bearer ${token}`,
+                "ngrok-skip-browser-warning": "69420" // Добавь это
             },
             body: JSON.stringify(quizData)
         });
 
         if (response.ok) {
-            const result = await response.json();
-            alert("Quiz successfully saved to your account!");
-            
-            // Очищаем локальное состояние
+            alert("Quiz successfully saved!");
             createdQuestions = [];
-            localStorage.removeItem("selectedQuizId");
-            
-            // Возвращаемся в дашборд
             window.location.href = "dashboard.html";
         } else {
             const errText = await response.text();
@@ -105,7 +96,6 @@ async function saveQuizToAccount() {
         }
     } catch (err) {
         console.error("Save error:", err);
-        alert("Server connection error. Is the backend running?");
     }
 }
 
