@@ -95,7 +95,7 @@ The project features **Adaptive UI Logic.** While the Host view is designed for 
 ---
 
 ### 📸 Preview
-[Start Screen Preview](screenshots/starting_screen.jpg)
+[Start Screen Preview] screenshots/starting_screen.jpg
 [Authorization Preview](screenshots/authorization_screen.jpg)
 [Dashboard Preview](screenshots/dashboard_screen.jpg)
 [Lobby Preview](screenshots/lobby_screen_host.jpg)
