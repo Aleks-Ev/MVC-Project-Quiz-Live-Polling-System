@@ -61,16 +61,16 @@ To bypass ngrok's security warning, **every device** (Host PC and all Player pho
 1. Open this link in the browser: `https://YOUR-LINK.ngrok-free.dev/api/quizzes`
 2. Click the blue **"Visit Site"** button. If you see JSON text or a blank screen, you are good to go!
 
-#### Step 1: Account Creation
+#### Step 2: Account Creation
 1. Open the application and go to the **Sign Up page**.
 2. Create an account. Your quizzes will be securely linked to your unique `UserId`.
 
-#### Step 2: The Host (Computer)
+#### Step 3: The Host (Computer)
 1. Go to: `http://localhost:5178/Authorization.html`
 2. Log in and navigate to the **Dashboard**.
 3. Select a quiz and click **"Create Lobby"**. 
 
-#### Step 3: The Players (Phones)
+#### Step 4: The Players (Phones)
 1. Players go to: `https://YOUR-LINK.ngrok-free.dev/start.html`
 2. Enter the **PIN** (The Quiz ID from the Host's screen) and a **Nickname**.
 3. Click **"Join"** and wait for the Host to start the game!
@@ -95,14 +95,14 @@ The project features **Adaptive UI Logic.** While the Host view is designed for 
 ---
 
 ### 📸 Preview
-`![Start Screen Preview](screenshots/starting_screen.jpg)`
-`![Authorization Preview](screenshots/authorization_screen.jpg)`
-`![Dashboard Preview](screenshots/dashboard_screen.jpg)`
-`![Lobby Preview](screenshots/lobby_screen_host.jpg)`
-`![Joining to Lobby Preview](screenshots/join_lobby_screen.jpg)`
-`![Quiz Preview](screenshots/quiz_example.jpg)`
-`![Podium Preview](screenshots/finish_screen_podium.jpg)`
-`![Winners Rating Preview](screenshots/finish_screen_statistics.jpg)`
+[Start Screen Preview](screenshots/starting_screen.jpg)
+[Authorization Preview](screenshots/authorization_screen.jpg)
+[Dashboard Preview](screenshots/dashboard_screen.jpg)
+[Lobby Preview](screenshots/lobby_screen_host.jpg)
+[Joining to Lobby Preview](screenshots/join_lobby_screen.jpg)
+[Quiz Preview](screenshots/quiz_example.jpg)
+[Podium Preview](screenshots/finish_screen_podium.jpg)
+[Winners Rating Preview](screenshots/finish_screen_statistics.jpg)
 
 ---
 
